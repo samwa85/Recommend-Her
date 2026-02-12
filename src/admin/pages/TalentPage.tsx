@@ -210,7 +210,7 @@ export default function TalentPage() {
       industry: filters.industry || undefined,
       role_category: filters.role_category || undefined,
       years_of_experience: filters.years_of_experience || undefined,
-      has_cv: filters.has_cv || undefined,
+      has_cv: (filters.has_cv as 'yes' | 'no' | '' | undefined) || undefined,
       date_from: filters.date_from || undefined,
       date_to: filters.date_to || undefined,
     },
@@ -325,10 +325,10 @@ export default function TalentPage() {
     );
   }, []);
 
-  const handleStatusChange = useCallback(async (talent: TalentProfile, status: TalentStatus) => {
+  const handleStatusChange = useCallback(async (_talent: TalentProfile, status: TalentStatus) => {
     toast.promise(
       async () => {
-        const result = await updateStatus(talent.id, status);
+        const result = await updateStatus(status as 'pending' | 'approved' | 'rejected' | 'archived');
         if (result.success) {
           refresh();
           return `Talent ${status}`;
