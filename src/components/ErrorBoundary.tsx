@@ -35,10 +35,8 @@ export class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     });
 
-    // Log error to console in development
-    if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
-    }
+    // Always log errors for debugging
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
 
     // TODO: Send error to error tracking service (e.g., Sentry)
     // if (import.meta.env.PROD) {

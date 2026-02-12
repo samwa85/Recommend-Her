@@ -4,6 +4,10 @@ import * as Sentry from '@sentry/react'
 import './index.css'
 import App from './App.tsx'
 
+// Debug logging
+console.log('[App] Starting app initialization...');
+console.log('[App] Environment:', import.meta.env.MODE);
+
 // Initialize Sentry for error tracking
 const sentryDsn = import.meta.env['VITE_SENTRY_DSN'];
 const appEnv = import.meta.env['VITE_APP_ENV'];
@@ -35,8 +39,17 @@ if (sentryDsn && sentryDsn !== 'https://your-sentry-dsn@sentry.io/project-id') {
   });
 }
 
-createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  console.error('[App] Root element not found!');
+} else {
+  console.log('[App] Root element found, rendering app...');
+}
+
+createRoot(rootElement!).render(
   <StrictMode>
     <App />
   </StrictMode>,
 )
+
+console.log('[App] App rendered successfully');
