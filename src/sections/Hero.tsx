@@ -15,64 +15,92 @@ const Hero = () => {
   const bgImageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.set([taglineRef.current, headlineRef.current, subheadlineRef.current, ctaRef.current], {
-        opacity: 0,
-        y: 30,
+    console.log('[Hero] Setting up animations');
+    
+    // Safety timeout - ensure content is visible even if GSAP fails
+    const safetyTimeout = setTimeout(() => {
+      console.log('[Hero] Safety timeout - ensuring visibility');
+      [taglineRef.current, headlineRef.current, subheadlineRef.current, ctaRef.current, bgImageRef.current].forEach(el => {
+        if (el) {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        }
       });
-      gsap.set(bgImageRef.current, {
-        opacity: 0,
-        scale: 1.1,
+    }, 3000);
+    
+    try {
+      const ctx = gsap.context(() => {
+        gsap.set([taglineRef.current, headlineRef.current, subheadlineRef.current, ctaRef.current], {
+          opacity: 0,
+          y: 30,
+        });
+        gsap.set(bgImageRef.current, {
+          opacity: 0,
+          scale: 1.1,
+        });
+
+        const tl = gsap.timeline({ delay: 0.2 });
+
+        tl.to(bgImageRef.current, {
+          opacity: 1,
+          scale: 1,
+          duration: 1.5,
+          ease: 'power2.out',
+        })
+          .to(taglineRef.current, {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            ease: 'power2.out',
+          }, '-=1')
+          .to(headlineRef.current, {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            ease: 'power2.out',
+          }, '-=0.4')
+          .to(subheadlineRef.current, {
+            opacity: 1,
+            y: 0,
+            duration: 0.5,
+            ease: 'power2.out',
+          }, '-=0.3')
+          .to(ctaRef.current, {
+            opacity: 1,
+            y: 0,
+            duration: 0.4,
+            ease: 'power2.out',
+          }, '-=0.2');
+
+        ScrollTrigger.create({
+          trigger: sectionRef.current,
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 1,
+          onUpdate: (self) => {
+            const progress = self.progress;
+            gsap.set(headlineRef.current, { y: progress * -50 });
+            gsap.set(subheadlineRef.current, { y: progress * -80 });
+            gsap.set(bgImageRef.current, { y: progress * 30, scale: 1 + progress * 0.1 });
+          },
+        });
+      }, sectionRef);
+
+      return () => {
+        clearTimeout(safetyTimeout);
+        ctx.revert();
+      };
+    } catch (error) {
+      console.error('[Hero] GSAP animation error:', error);
+      // Make content visible on error
+      [taglineRef.current, headlineRef.current, subheadlineRef.current, ctaRef.current, bgImageRef.current].forEach(el => {
+        if (el) {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        }
       });
-
-      const tl = gsap.timeline({ delay: 0.2 });
-
-      tl.to(bgImageRef.current, {
-        opacity: 1,
-        scale: 1,
-        duration: 1.5,
-        ease: 'power2.out',
-      })
-        .to(taglineRef.current, {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          ease: 'power2.out',
-        }, '-=1')
-        .to(headlineRef.current, {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          ease: 'power2.out',
-        }, '-=0.4')
-        .to(subheadlineRef.current, {
-          opacity: 1,
-          y: 0,
-          duration: 0.5,
-          ease: 'power2.out',
-        }, '-=0.3')
-        .to(ctaRef.current, {
-          opacity: 1,
-          y: 0,
-          duration: 0.4,
-          ease: 'power2.out',
-        }, '-=0.2');
-
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 1,
-        onUpdate: (self) => {
-          const progress = self.progress;
-          gsap.set(headlineRef.current, { y: progress * -50 });
-          gsap.set(subheadlineRef.current, { y: progress * -80 });
-          gsap.set(bgImageRef.current, { y: progress * 30, scale: 1 + progress * 0.1 });
-        },
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
+      return () => clearTimeout(safetyTimeout);
+    }
   }, []);
 
   return (

@@ -1,8 +1,10 @@
 import { lazy } from 'react';
 import type { RouteObject } from 'react-router-dom';
 
-// Lazy load all pages
-const HomePage = lazy(() => import('@/pages/HomePage'));
+// Eager load HomePage for testing
+import HomePage from '@/pages/HomePage';
+
+// Lazy load other pages
 const Mission = lazy(() => import('@/pages/Mission'));
 const ForTalent = lazy(() => import('@/pages/ForTalent'));
 const ForSponsors = lazy(() => import('@/pages/ForSponsors'));
