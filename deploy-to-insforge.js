@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configuration
-const INSFORGE_URL = process.env.INSFORGE_URL || 'https://insforge.dev/api/project/320b91ba-0c4e-4940-ad76-adc2fea90bee';
+const INSFORGE_URL = process.env.INSFORGE_URL || 'https://aku8v88g.us-east.insforge.app';
 const SITE_NAME = process.env.SITE_NAME || 'recommendher';
 const DIST_DIR = process.env.DIST_DIR || './dist';
 
