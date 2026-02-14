@@ -8,7 +8,7 @@ export interface ErrorContext {
   route?: string;
   component?: string;
   action?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ErrorReport {
@@ -58,8 +58,8 @@ class ErrorTracker {
     );
   }
 
-  capture(error: Error | string, context: ErrorContext = {}): ErrorReport {
-    if (!this.isEnabled) return null as any;
+  capture(error: Error | string, context: ErrorContext = {}): ErrorReport | null {
+    if (!this.isEnabled) return null;
 
     const report: ErrorReport = {
       id: this.generateId(),

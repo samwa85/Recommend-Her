@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Download, FileText, CheckCircle, BookOpen } from 'lucide-react';
+import { Download, FileText, CheckCircle, BookOpen, ArrowRight, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { blogPosts } from '@/lib/data/blog';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -32,26 +35,7 @@ const resources = [
   },
 ];
 
-const blogPosts = [
-  {
-    title: 'The Power of Sponsorship vs. Mentorship',
-    excerpt: 'Understanding the difference and why sponsorship matters more for career advancement.',
-    date: 'Jan 15, 2026',
-    category: 'Leadership',
-  },
-  {
-    title: 'Success Story: How Sarah Landed Her Dream Role',
-    excerpt: 'A Recommend Her talent shares her journey from submission to promotion.',
-    date: 'Jan 10, 2026',
-    category: 'Success Stories',
-  },
-  {
-    title: 'Building an Inclusive Leadership Pipeline',
-    excerpt: 'How organizations can create pathways for diverse talent to reach the top.',
-    date: 'Jan 5, 2026',
-    category: 'Diversity & Inclusion',
-  },
-];
+
 
 const Resources = () => {
   const sectionRef = useRef<HTMLElement>(null);
@@ -116,17 +100,17 @@ const Resources = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} style={{ backgroundColor: "var(--background)" }} className="pt-32 pb-24 lg:pb-32  min-h-screen">
+    <section ref={sectionRef} style={{ backgroundColor: "hsl(var(--background))" }} className="pt-32 pb-24 lg:pb-32  min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div ref={headerRef} className="text-center mb-16">
-          <p style={{ color: "var(--primary)" }} className="font-serif text-sm uppercase tracking-[4px]  mb-4">
+          <p style={{ color: "hsl(var(--primary))" }} className="font-serif text-sm uppercase tracking-[4px]  mb-4">
             Resources & Blog
           </p>
-          <h1 style={{ color: "var(--foreground)" }} className="font-serif text-4xl sm:text-5xl font-bold  mb-6">
+          <h1 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-4xl sm:text-5xl font-bold  mb-6">
             Knowledge Hub
           </h1>
-          <p style={{ color: "var(--muted-foreground)" }} className="font-sans text-lg  max-w-2xl mx-auto">
+          <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-lg  max-w-2xl mx-auto">
             Downloadable guides, success stories, and thought leadership to help you 
             on your sponsorship journey.
           </p>
@@ -134,7 +118,7 @@ const Resources = () => {
 
         {/* Downloadable Resources */}
         <div className="mb-20">
-          <h2 style={{ color: "var(--foreground)" }} className="font-serif text-2xl font-bold  mb-8">
+          <h2 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-2xl font-bold  mb-8">
             Downloadable Guides
           </h2>
           <div ref={resourcesRef} className="grid md:grid-cols-3 gap-6">
@@ -148,16 +132,16 @@ const Resources = () => {
                 <div className={`w-14 h-14 ${resource.color} rounded-xl flex items-center justify-center mb-4`}>
                   <resource.icon size={28} className={resource.iconColor} />
                 </div>
-                <span style={{ color: "var(--foreground)" }} className="inline-block px-3 py-1 /5 rounded-full font-serif text-xs  mb-3">
+                <span style={{ color: "hsl(var(--foreground))" }} className="inline-block px-3 py-1 /5 rounded-full font-serif text-xs  mb-3">
                   {resource.type}
                 </span>
-                <h3 style={{ color: "var(--foreground)" }} className="font-serif text-lg font-bold  mb-2 group-hover: transition-colors">
+                <h3 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-lg font-bold  mb-2 group-hover: transition-colors">
                   {resource.title}
                 </h3>
-                <p style={{ color: "var(--foreground)" }} className="font-sans text-sm /60 mb-4">
+                <p style={{ color: "hsl(var(--foreground))" }} className="font-sans text-sm /60 mb-4">
                   {resource.description}
                 </p>
-                <button style={{ color: "var(--foreground)" }} className="inline-flex items-center gap-2  font-serif text-sm font-semibold
+                <button style={{ color: "hsl(var(--foreground))" }} className="inline-flex items-center gap-2  font-serif text-sm font-semibold
                                  group-hover: transition-colors">
                   <Download size={16} />
                   Download
@@ -169,32 +153,50 @@ const Resources = () => {
 
         {/* Blog Posts */}
         <div>
-          <h2 style={{ color: "var(--foreground)" }} className="font-serif text-2xl font-bold  mb-8">
-            Latest from the Blog
-          </h2>
+          <div className="flex items-center justify-between mb-8">
+            <h2 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-2xl font-bold">
+              Latest from the Blog
+            </h2>
+            <Button variant="outline" asChild>
+              <Link to="/blog">
+                View All
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
           <div ref={blogRef} className="grid md:grid-cols-3 gap-6">
-            {blogPosts.map((post) => (
-              <article
-                key={post.title}
+            {blogPosts.slice(0, 3).map((post) => (
+              <Link
+                key={post.slug}
+                to={`/blog/${post.slug}`}
                 className="bg-white rounded-2xl p-6 shadow-brand border border-navy/5
                          transition-all duration-300 hover:-translate-y-2 hover:shadow-brand-lg
-                         group cursor-pointer"
+                         group cursor-pointer block"
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <span style={{ color: "var(--primary)" }} className="px-3 py-1 /10 rounded-full font-serif text-xs ">
+                  <span style={{ color: "hsl(var(--primary))" }} className="px-3 py-1 /10 rounded-full font-serif text-xs ">
                     {post.category}
                   </span>
-                  <span style={{ color: "var(--foreground)" }} className="font-sans text-xs /40">
+                  <span style={{ color: "hsl(var(--foreground))" }} className="font-sans text-xs /40">
                     {post.date}
                   </span>
                 </div>
-                <h3 style={{ color: "var(--foreground)" }} className="font-serif text-lg font-bold  mb-3 group-hover: transition-colors">
+                <h3 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-lg font-bold mb-3 group-hover:text-primary transition-colors">
                   {post.title}
                 </h3>
-                <p style={{ color: "var(--foreground)" }} className="font-sans text-sm /60">
+                <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm mb-4">
                   {post.excerpt}
                 </p>
-              </article>
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <span className="text-sm font-medium text-primary group-hover:underline">
+                    Read Article
+                  </span>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="w-3 h-3" />
+                    {post.readTime}
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         </div>

@@ -107,9 +107,9 @@ export async function withRetry<T>(
  * Wrapper for Supabase queries with retry
  */
 export async function queryWithRetry<T>(
-  queryFn: () => Promise<{ data: T | null; error: any }>,
+  queryFn: () => Promise<{ data: T | null; error: Error | null }>,
   options?: RetryOptions
-): Promise<{ data: T | null; error: any }> {
+): Promise<{ data: T | null; error: Error | null }> {
   try {
     const result = await withRetry(async () => {
       const { data, error } = await queryFn();
@@ -129,12 +129,12 @@ export async function queryWithRetry<T>(
 /**
  * Hook-style retry wrapper for React components
  */
-export function createRetryableFunction<T extends (...args: any[]) => Promise<any>>(
+export function createRetryableFunction<T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   options?: RetryOptions
 ): T {
   return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
-    return withRetry(() => fn(...args), options);
+    return withRetry(() => fn(...args), options) as ReturnType<T>;
   }) as T;
 }
 
@@ -170,7 +170,7 @@ interface QueuedRequest {
   id: string;
   timestamp: number;
   type: 'talent' | 'sponsor' | 'contact';
-  data: any;
+  data: unknown;
 }
 
 const QUEUE_KEY = 'pending_requests_queue';

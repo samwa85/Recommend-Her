@@ -120,31 +120,36 @@ const CTASection = () => {
         <div ref={ctaRef} className="flex flex-wrap justify-center gap-4">
           <Link
             to="/for-talent"
-            className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-semibold transition-all duration-300 hover:-translate-y-1 animate-pulse-glow"
+            className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-bold text-lg transition-all duration-300 hover:-translate-y-1 hover:scale-105"
             style={{ 
-              backgroundColor: 'var(--primary)', 
-              color: 'var(--primary-foreground)',
-              boxShadow: 'var(--shadow)'
+              backgroundColor: '#ffffff', 
+              color: '#1e1b4b',
+              boxShadow: '0 8px 30px rgba(255, 255, 255, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2)',
+              border: '2px solid #ffffff'
             }}
           >
             Submit Your CV
             <ArrowRight
-              size={18}
+              size={20}
               className="transition-transform duration-300 group-hover:translate-x-1"
+              strokeWidth={2.5}
             />
           </Link>
           <Link
             to="/for-sponsors"
-            className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-semibold transition-all duration-300 border-2"
+            className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-bold text-lg transition-all duration-300 border-2 hover:-translate-y-1 hover:scale-105"
             style={{ 
-              borderColor: 'var(--accent)', 
-              color: 'white'
+              backgroundColor: 'transparent',
+              borderColor: '#ffffff', 
+              color: '#ffffff',
+              boxShadow: '0 4px 15px rgba(255, 255, 255, 0.15)'
             }}
           >
             Become a Sponsor
             <ArrowRight
-              size={18}
+              size={20}
               className="transition-transform duration-300 group-hover:translate-x-1"
+              strokeWidth={2.5}
             />
           </Link>
         </div>

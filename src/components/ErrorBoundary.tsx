@@ -59,28 +59,28 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--background)' }}>
+        <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'hsl(var(--background))' }}>
           <div className="max-w-md w-full text-center">
             <div
               className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
-              style={{ backgroundColor: 'var(--destructive)', opacity: 0.1 }}
+              style={{ backgroundColor: 'hsl(var(--destructive) / 0.1)' }}
             >
               <AlertTriangle
                 className="w-10 h-10"
-                style={{ color: 'var(--destructive)' }}
+                style={{ color: 'hsl(var(--destructive))' }}
               />
             </div>
 
             <h1
               className="font-serif text-2xl font-bold mb-4"
-              style={{ color: 'var(--foreground)' }}
+              style={{ color: 'hsl(var(--foreground))' }}
             >
               Something went wrong
             </h1>
 
             <p
               className="font-sans text-base mb-6"
-              style={{ color: 'var(--muted-foreground)' }}
+              style={{ color: 'hsl(var(--muted-foreground))' }}
             >
               We apologize for the inconvenience. An unexpected error has occurred.
             </p>
@@ -89,8 +89,8 @@ export class ErrorBoundary extends Component<Props, State> {
               <details
                 className="text-left mb-6 p-4 rounded-lg overflow-auto max-h-60"
                 style={{
-                  backgroundColor: 'var(--muted)',
-                  color: 'var(--muted-foreground)',
+                  backgroundColor: 'hsl(var(--muted))',
+                  color: 'hsl(var(--muted-foreground))',
                 }}
               >
                 <summary className="font-semibold cursor-pointer mb-2">
@@ -106,15 +106,15 @@ export class ErrorBoundary extends Component<Props, State> {
             <Button
               onClick={this.handleReset}
               className="inline-flex items-center gap-2"
-              style={{ backgroundColor: 'var(--primary)' }}
+              style={{ backgroundColor: 'hsl(var(--primary))' }}
             >
               <RefreshCw size={16} />
               Try Again
             </Button>
 
-            <p className="mt-4 font-sans text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="mt-4 font-sans text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
               If the problem persists, please{' '}
-              <a href="/contact" className="underline" style={{ color: 'var(--primary)' }}>
+              <a href="/contact" className="underline" style={{ color: 'hsl(var(--primary))' }}>
                 contact our support team
               </a>
             </p>

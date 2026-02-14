@@ -7,6 +7,7 @@ import Navigation from './sections/Navigation';
 import Footer from './sections/Footer';
 import { routes } from './routes';
 import { PageLoader } from './components/PageLoader';
+import { Toaster } from './components/ui/sonner';
 
 // Register GSAP plugins
 try {
@@ -37,26 +38,6 @@ function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Error handler for lazy loading failures
-function LazyErrorFallback({ error }: { error: Error }) {
-  console.error('[App] Lazy loading error:', error);
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--background)' }}>
-      <div className="text-center">
-        <h1 className="text-2xl font-bold mb-4" style={{ color: 'var(--destructive)' }}>Failed to load page</h1>
-        <p className="mb-4" style={{ color: 'var(--muted-foreground)' }}>{error.message}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 rounded"
-          style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
-        >
-          Reload Page
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function App() {
   useEffect(() => {
     console.log('[App] Component mounted');
@@ -69,7 +50,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
+        <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--background))' }}>
           <Layout>
             <main>
               <Suspense fallback={<PageLoader />}>
@@ -89,6 +70,7 @@ function App() {
               </Suspense>
             </main>
           </Layout>
+          <Toaster position="top-right" richColors closeButton />
         </div>
       </Router>
     </ErrorBoundary>

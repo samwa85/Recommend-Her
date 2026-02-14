@@ -76,7 +76,7 @@ export function sanitizePhone(phone: string): string {
   if (!phone) return '';
   
   return phone
-    .replace(/[^\d+\-\(\)\s.]/g, '')
+    .replace(/[^\d+\-()\s.]/g, '')
     .trim();
 }
 

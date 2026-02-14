@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Quote, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -61,39 +61,7 @@ const Testimonials = () => {
     return () => ctx.revert();
   }, []);
 
-  // Auto-rotate
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isAnimating) {
-        goToNext();
-      }
-    }, 6000);
-
-    return () => clearInterval(interval);
-  }, [activeIndex, isAnimating]);
-
-  const goToNext = () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    const nextIndex = (activeIndex + 1) % testimonials.length;
-    animateTransition(nextIndex);
-  };
-
-  const goToPrev = () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    const prevIndex =
-      (activeIndex - 1 + testimonials.length) % testimonials.length;
-    animateTransition(prevIndex);
-  };
-
-  const goToIndex = (index: number) => {
-    if (isAnimating || index === activeIndex) return;
-    setIsAnimating(true);
-    animateTransition(index);
-  };
-
-  const animateTransition = (newIndex: number) => {
+  const animateTransition = useCallback((newIndex: number) => {
     const tl = gsap.timeline({
       onComplete: () => {
         setActiveIndex(newIndex);
@@ -112,7 +80,39 @@ const Testimonials = () => {
       duration: 0.4,
       ease: 'power2.out',
     });
+  }, []);
+
+  const goToNext = useCallback(() => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    const nextIndex = (activeIndex + 1) % testimonials.length;
+    animateTransition(nextIndex);
+  }, [activeIndex, isAnimating, animateTransition]);
+
+  const goToPrev = () => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    const prevIndex =
+      (activeIndex - 1 + testimonials.length) % testimonials.length;
+    animateTransition(prevIndex);
   };
+
+  const goToIndex = (index: number) => {
+    if (isAnimating || index === activeIndex) return;
+    setIsAnimating(true);
+    animateTransition(index);
+  };
+
+  // Auto-rotate
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isAnimating) {
+        goToNext();
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [activeIndex, isAnimating, goToNext]);
 
   const currentTestimonial = testimonials[activeIndex];
 
@@ -126,12 +126,12 @@ const Testimonials = () => {
         {/* Section Header */}
         <div ref={headerRef} className="text-center mb-12">
           <p 
-            className="font-sans text-sm uppercase tracking-[4px] mb-4"
-            style={{ color: 'var(--accent)' }}
+            className="font-sans text-sm uppercase tracking-[4px] mb-4 font-semibold"
+            style={{ color: '#f472b6' }}
           >
             Testimonials
           </p>
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold" style={{ color: '#ffffff' }}>
             What Our Community Says
           </h2>
         </div>
@@ -158,7 +158,7 @@ const Testimonials = () => {
             <div className="pt-4">
               <p 
                 className="font-serif text-xl sm:text-2xl leading-relaxed mb-8"
-                style={{ color: 'var(--foreground)', lineHeight: '1.7' }}
+                style={{ color: '#ffffff', lineHeight: '1.7' }}
               >
                 "{currentTestimonial.quote}"
               </p>
@@ -174,13 +174,13 @@ const Testimonials = () => {
                 <div>
                   <h4 
                     className="font-serif text-lg sm:text-xl font-bold"
-                    style={{ color: 'var(--foreground)' }}
+                    style={{ color: '#ffffff' }}
                   >
                     {currentTestimonial.name}
                   </h4>
                   <p 
-                    className="font-sans text-base"
-                    style={{ color: 'var(--muted-foreground)' }}
+                    className="font-sans text-base font-medium"
+                    style={{ color: '#6b7280' }}
                   >
                     {currentTestimonial.title}
                   </p>

@@ -2,7 +2,7 @@
 // REQUEST QUERIES - Single Source of Truth for Request Operations
 // ============================================================================
 
-import { supabase } from '../supabase/client';
+import { db } from '../insforge/client';
 import type { Request, RequestInput, RequestUpdate, RequestFilters } from '../types/db';
 import type { PaginatedResult, PaginationParams, QueryResult, ListResult } from '../utils/errors';
 import { RequestStatus, RequestPriority } from '../types/enums';
@@ -41,11 +41,11 @@ export async function listRequests(
   const sortOrder = pagination.sortOrder ?? 'desc';
   
   try {
-    let selectQuery = withRelations
+    const selectQuery = withRelations
       ? '*, talent:talent_profiles(*), sponsor:sponsor_profiles(*)' 
       : '*';
     
-    let query = supabase
+    let query = db
       .from('requests')
       .select(selectQuery, { count: 'exact' });
     
@@ -135,7 +135,7 @@ export async function getAllRequests(
   filters?: Omit<RequestFilters, 'search'>
 ): Promise<ListResult<Request>> {
   try {
-    let query = supabase.from('requests').select('*');
+    let query = db.from('requests').select('*');
     
     if (filters?.status) {
       query = query.eq('status', filters.status);
@@ -168,7 +168,7 @@ export async function getRequestById(
   id: string
 ): Promise<QueryResult<Request>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('requests')
       .select('*, talent:talent_profiles(*), sponsor:sponsor_profiles(*)')
       .eq('id', id)
@@ -195,7 +195,7 @@ export async function createRequest(
   input: RequestInput
 ): Promise<QueryResult<Request>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('requests')
       .insert(input)
       .select()
@@ -220,7 +220,7 @@ export async function updateRequest(
   updates: RequestUpdate
 ): Promise<QueryResult<Request>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('requests')
       .update(updates)
       .eq('id', id)
@@ -327,7 +327,7 @@ export async function deleteRequest(
   id: string
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    const { error } = await supabase
+    const { error } = await db
       .from('requests')
       .delete()
       .eq('id', id);
@@ -355,7 +355,7 @@ export async function getRequestStatusCounts(): Promise<
   QueryResult<Array<{ status: string; count: number }>>
 > {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('v_request_status_counts')
       .select('status, count');
 
@@ -373,7 +373,7 @@ export async function getRequestStatusCounts(): Promise<
  */
 export async function getOpenRequestsCount(): Promise<number> {
   try {
-    const { count, error } = await supabase
+    const { count, error } = await db
       .from('requests')
       .select('*', { count: 'exact', head: true })
       .eq('status', RequestStatus.OPEN);
@@ -392,7 +392,7 @@ export async function getOpenRequestsCount(): Promise<number> {
  */
 export async function getUrgentRequestsCount(): Promise<number> {
   try {
-    const { count, error } = await supabase
+    const { count, error } = await db
       .from('requests')
       .select('*', { count: 'exact', head: true })
       .eq('priority', RequestPriority.URGENT)
@@ -415,7 +415,7 @@ export async function getRecentRequests(
   limit: number = 10
 ): Promise<ListResult<Request>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('requests')
       .select('*')
       .order('created_at', { ascending: false })

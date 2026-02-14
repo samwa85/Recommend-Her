@@ -21,33 +21,44 @@ export type Json =
 
 export interface TalentProfileRow {
   id: string;
+  user_id?: string;
   full_name: string;
   email: string;
   phone: string | null;
   linkedin_url: string | null;
   website_url: string | null;
+  portfolio_url?: string | null;
   country: string | null;
   city: string | null;
-  years_of_experience: string | null;
+  years_of_experience?: string | null;
+  years_experience?: number | null;
   education_level: string | null;
-  current_role_title: string | null;
+  current_role_title?: string | null;
+  seniority_level?: string | null;
   industry: string | null;
-  seeking_roles: string[] | null;
-  role_category: string | null;
+  seeking_roles?: string[] | null;
+  role_category?: string | null;
+  functions?: string[] | null;
   work_mode_preference: string | null;
   salary_range: string | null;
   headline: string | null;
   bio: string | null;
   skills: string[] | null;
-  cv_file_id: string | null;
+  languages?: string[] | null;
+  cv_file_id?: string | null;
+  cv_file_path?: string | null;
   source: string | null;
   referral_code: string | null;
-  gdpr_consent: boolean;
+  gdpr_consent?: boolean;
   status: string;
-  internal_notes: string | null;
+  visibility?: string;
+  internal_notes?: string | null;
+  admin_private_notes?: string | null;
   created_at: string;
   updated_at: string;
-  reviewed_at: string | null;
+  reviewed_at?: string | null;
+  submitted_at?: string | null;
+  approved_at?: string | null;
   reviewed_by: string | null;
 }
 
@@ -189,11 +200,13 @@ export interface TalentFilters {
   status?: string;
   industry?: string;
   role_category?: string;
+  seniority_level?: string;
   country?: string;
   city?: string;
   source?: string;
   education_level?: string;
   years_of_experience?: string;
+  years_experience?: number;
   has_cv?: 'yes' | 'no' | '';
   date_from?: string;
   date_to?: string;
@@ -234,6 +247,52 @@ export interface MessageFilters {
 }
 
 // ============================================================================
+// BLOG POST TYPES
+// ============================================================================
+
+export interface BlogPostRow {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featured_image: string | null;
+  video_url: string | null;
+  author_name: string;
+  author_title: string | null;
+  author_image: string | null;
+  category: string;
+  tags: string[] | null;
+  read_time: string | null;
+  status: 'draft' | 'published' | 'archived';
+  published_at: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
+export type BlogPost = BlogPostRow;
+
+export type BlogPostInput = Omit<
+  BlogPostRow,
+  'id' | 'created_at' | 'updated_at' | 'published_at' | 'created_by'
+>;
+
+export type BlogPostUpdate = Partial<
+  Omit<BlogPostRow, 'id' | 'created_at' | 'created_by'>
+>;
+
+export interface BlogFilters {
+  status?: 'draft' | 'published' | 'archived';
+  category?: string;
+  author?: string;
+  tag?: string;
+  search?: string;
+}
+
+// ============================================================================
 // SUPABASE DATABASE INTERFACE
 // Used with createClient<Database>()
 // ============================================================================
@@ -269,6 +328,12 @@ export interface Database {
         Row: FileRow;
         Insert: FileInput;
         Update: FileUpdate;
+        Relationships: [];
+      };
+      blog_posts: {
+        Row: BlogPostRow;
+        Insert: BlogPostInput;
+        Update: BlogPostUpdate;
         Relationships: [];
       };
     };

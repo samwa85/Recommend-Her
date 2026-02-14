@@ -89,13 +89,12 @@ export async function submitTalentProfile(input: TalentProfileInput) {
     p_bio: input.bio || '',
     p_years_experience: input.years_experience || 0,
     p_industry: input.industry || '',
-    p_seniority_level: input.seniority_level || '',
-    p_functions: input.functions || [],
+    p_current_title: input.current_title || '',
+    p_role_category: input.role_category || '',
     p_skills: input.skills || [],
-    p_languages: input.languages || [],
     p_linkedin_url: input.linkedin_url || '',
     p_portfolio_url: input.portfolio_url,
-    p_cv_file_path: input.cv_file_path,
+    p_website_url: input.website_url,
   });
 
   return { data, error };
@@ -128,7 +127,7 @@ export async function getApprovedTalent(options?: {
     query = query.eq('industry', options.industry);
   }
   if (options?.seniority) {
-    query = query.eq('seniority_level', options.seniority);
+    query = query.eq('current_role_title', options.seniority);
   }
   if (options?.limit) {
     query = query.limit(options.limit);
@@ -264,8 +263,8 @@ export async function getAllTalent(options?: {
   
   // Log details for debugging
   if (data && data.length > 0) {
-    const withProfile = data.filter((d: any) => d.profiles !== null).length;
-    const withoutProfile = data.filter((d: any) => d.profiles === null).length;
+    const withProfile = data.filter((d: { profiles: unknown }) => d.profiles !== null).length;
+    const withoutProfile = data.filter((d: { profiles: unknown }) => d.profiles === null).length;
     console.log(`getAllTalent results: ${data.length} total (${withProfile} with profile, ${withoutProfile} without)`);
   }
   
@@ -310,13 +309,12 @@ export async function testDatabaseRecording() {
     p_bio: 'Test bio for debugging',
     p_years_experience: 5,
     p_industry: 'Technology',
-    p_seniority_level: 'Senior',
-    p_functions: ['Product'],
+    p_current_title: 'Senior Product Manager',
+    p_role_category: 'Product',
     p_skills: ['Testing'],
-    p_languages: ['English'],
     p_linkedin_url: '',
     p_portfolio_url: '',
-    p_cv_file_path: null,
+    p_website_url: null,
   });
   
   console.log('🧪 [Test] Insert result:', { data: insertData, error: insertError });
@@ -495,15 +493,21 @@ export async function submitContactForm(input: {
   organization?: string;
   message: string;
 }) {
-  const { data, error } = await supabase.rpc('submit_contact_form', {
-    p_full_name: input.full_name,
-    p_email: input.email,
-    p_inquiry_type: input.inquiry_type,
-    p_organization: input.organization || '',
-    p_message: input.message,
-  });
+  // Use direct insert instead of RPC
+  const { data, error } = await supabase
+    .from('contact_submissions')
+    .insert({
+      full_name: input.full_name,
+      email: input.email,
+      inquiry_type: input.inquiry_type,
+      organization: input.organization || '',
+      message: input.message,
+      status: 'new'
+    })
+    .select('id')
+    .single();
 
-  return { data, error };
+  return { data: data?.id, error };
 }
 
 export async function getContactSubmissions(options?: {

@@ -68,6 +68,7 @@ export default function SuperAdminDashboard() {
       }
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle auto-refresh toggle
@@ -88,6 +89,7 @@ export default function SuperAdminDashboard() {
         clearInterval(refreshIntervalRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRefresh]);
 
   // Setup realtime subscriptions
@@ -149,6 +151,7 @@ export default function SuperAdminDashboard() {
     return () => {
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [realtimeEnabled]);
 
   const addRealtimeChange = useCallback((table: string, type: 'INSERT' | 'UPDATE' | 'DELETE') => {
@@ -167,7 +170,7 @@ export default function SuperAdminDashboard() {
         setError('Access denied. Admin privileges required.');
         setIsLoading(false);
       }
-    } catch (err) {
+    } catch {
       setError('Authentication error. Please log in.');
       setIsLoading(false);
     }
@@ -301,7 +304,7 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const exportToCSV = (data: any[], filename: string) => {
+  const exportToCSV = (data: object[], filename: string) => {
     if (data.length === 0) return;
     
     const headers = Object.keys(data[0]).join(',');

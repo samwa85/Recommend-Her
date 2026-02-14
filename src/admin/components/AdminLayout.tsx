@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Users,
   Building2,
+  FileText,
   MessageSquare,
   Mail,
   BarChart3,
@@ -98,6 +99,11 @@ export function AdminLayout({
       path: '/admin/sponsors',
       label: 'Sponsors',
       icon: Building2,
+    },
+    {
+      path: '/admin/blog',
+      label: 'Blog',
+      icon: FileText,
     },
     { 
       path: '/admin/requests', 

@@ -2,15 +2,14 @@
 // MESSAGES PAGE - Detailed Message Management
 // ============================================================================
 
-import { useState, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Eye,
   CheckCircle,
   Send,
   Archive,
   Trash2,
-  FileX,
   Reply,
   Mail,
   Phone,
@@ -24,7 +23,7 @@ import {
   X,
   Inbox,
   Clock,
-  MessageSquare,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -69,9 +68,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
 import { AdminLayout } from '../components/AdminLayout';
 import { SkeletonTable } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
@@ -92,7 +89,6 @@ const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 // ============================================================================
 
 export default function MessagesPage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
   // ============================================================================
@@ -101,10 +97,6 @@ export default function MessagesPage() {
   
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  
-  // Selection state
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [selectAll, setSelectAll] = useState(false);
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -142,26 +134,38 @@ export default function MessagesPage() {
   // DATA FETCHING
   // ============================================================================
   
+  // ============================================================================
+  // DATA FETCHING - Memoized to prevent infinite loops
+  // ============================================================================
+  
+  // Memoize filters to prevent unnecessary re-fetches
+  const memoizedFilters = useMemo(() => ({
+    status: filters.status || undefined,
+    search: filters.search || undefined,
+  }), [filters.status, filters.search]);
+  
+  // Memoize pagination to prevent unnecessary re-fetches
+  const memoizedPagination = useMemo(() => ({
+    page: pagination.page,
+    perPage: pagination.perPage,
+  }), [pagination.page, pagination.perPage]);
+  
   const { 
     data, 
     isLoading, 
     error, 
     refresh 
   } = useMessageList({
-    filters: {
-      status: filters.status || undefined,
-      search: filters.search || undefined,
-    },
-    pagination: {
-      page: pagination.page,
-      perPage: pagination.perPage,
-    },
+    filters: memoizedFilters,
+    pagination: memoizedPagination,
     autoRefresh: true,
   });
 
   const { 
     data: selectedMessage,
+    replies: messageReplies,
     updateStatus,
+    addReply,
   } = useMessageDetail(selectedMessageId);
 
   // ============================================================================
@@ -170,8 +174,6 @@ export default function MessagesPage() {
   
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
   
-  const hasSelectedRows = selectedRows.size > 0;
-
   const unreadCount = data.data.filter(m => m.status === MessageStatus.UNREAD).length;
 
   // ============================================================================
@@ -208,27 +210,6 @@ export default function MessagesPage() {
     }));
   }, []);
 
-  const handleRowSelect = useCallback((id: string) => {
-    setSelectedRows(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  }, []);
-
-  const handleSelectAll = useCallback(() => {
-    if (selectAll) {
-      setSelectedRows(new Set());
-    } else {
-      setSelectedRows(new Set(data.data.map(m => m.id)));
-    }
-    setSelectAll(!selectAll);
-  }, [selectAll, data.data]);
-
   const handleViewDetail = useCallback(async (message: Message) => {
     setSelectedMessageId(message.id);
     setIsReplying(false);
@@ -243,7 +224,7 @@ export default function MessagesPage() {
     setDetailOpen(true);
   }, [updateStatus, refresh]);
 
-  const handleStatusChange = useCallback(async (message: Message, status: MessageStatus) => {
+  const handleStatusChange = useCallback(async (status: MessageStatus) => {
     toast.promise(
       async () => {
         const result = await updateStatus(status);
@@ -266,20 +247,22 @@ export default function MessagesPage() {
     
     toast.promise(
       async () => {
-        // Simulate sending reply
-        await updateStatus(MessageStatus.REPLIED);
+        // Save reply to database
+        const result = await addReply(replyText.trim());
+        if (!result.success) throw result.error;
+        
         setIsReplying(false);
         setReplyText('');
         refresh();
-        return 'Reply sent';
+        return 'Reply saved';
       },
       {
-        loading: 'Sending reply...',
-        success: 'Reply sent successfully',
-        error: 'Failed to send reply',
+        loading: 'Saving reply...',
+        success: 'Reply saved successfully',
+        error: (err) => `Failed to save reply: ${err instanceof Error ? err.message : 'Unknown error'}`,
       }
     );
-  }, [replyText, updateStatus, refresh]);
+  }, [replyText, addReply, refresh]);
 
   const handleDelete = useCallback(async () => {
     setDeleteDialogOpen(false);
@@ -381,12 +364,12 @@ export default function MessagesPage() {
         {showFilters && (
           <div className="p-4 bg-muted/50 rounded-lg space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <Select value={filters.status} onValueChange={(v) => handleFilterChange('status', v)}>
+              <Select value={filters.status || 'all'} onValueChange={(v) => handleFilterChange('status', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   {Object.entries(MESSAGE_STATUS_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
@@ -423,7 +406,7 @@ export default function MessagesPage() {
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             {Object.entries(filters)
-              .filter(([_, value]) => value)
+              .filter(([, value]) => value)
               .map(([key, value]) => (
                 <Badge
                   key={key}
@@ -569,7 +552,7 @@ export default function MessagesPage() {
                           </DropdownMenuItem>
                           
                           {message.status === MessageStatus.UNREAD && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(message, MessageStatus.READ)}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(MessageStatus.READ)}>
                               <CheckCircle className="w-4 h-4 mr-2" />
                               Mark as Read
                             </DropdownMenuItem>
@@ -581,7 +564,7 @@ export default function MessagesPage() {
                           </DropdownMenuItem>
                           
                           {message.status !== MessageStatus.ARCHIVED && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(message, MessageStatus.ARCHIVED)}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(MessageStatus.ARCHIVED)}>
                               <Archive className="w-4 h-4 mr-2" />
                               Archive
                             </DropdownMenuItem>
@@ -735,13 +718,40 @@ export default function MessagesPage() {
                     </CardContent>
                   </Card>
 
+                  {/* Reply History */}
+                  {messageReplies.length > 0 && (
+                    <Card className="border-green-200 bg-green-50/50">
+                      <CardHeader>
+                        <CardTitle className="text-sm font-medium flex items-center gap-2 text-green-700">
+                          <CheckCircle className="w-4 h-4" />
+                          Your Replies ({messageReplies.length})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {messageReplies.map((reply, index) => (
+                          <div key={reply.id} className="bg-white rounded-lg p-4 border border-green-100">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-medium text-green-600">
+                                Reply #{index + 1}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(reply.created_at)}
+                              </span>
+                            </div>
+                            <p className="text-sm whitespace-pre-wrap">{reply.reply_text}</p>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {/* Reply Section */}
                   {isReplying && (
                     <Card className="border-primary/20">
                       <CardHeader>
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
                           <Reply className="w-4 h-4" />
-                          Reply
+                          New Reply
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
@@ -765,7 +775,7 @@ export default function MessagesPage() {
                             disabled={!replyText.trim()}
                           >
                             <Send className="w-4 h-4 mr-2" />
-                            Send Reply
+                            Save Reply
                           </Button>
                         </div>
                       </CardContent>

@@ -75,7 +75,7 @@ const ForTalentSection = () => {
     <section 
       ref={sectionRef} 
       className="py-24 lg:py-32 overflow-hidden"
-      style={{ backgroundColor: 'var(--background)' }}
+      style={{ backgroundColor: 'hsl(var(--background))' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-0 items-center">
@@ -85,27 +85,27 @@ const ForTalentSection = () => {
               ref={contentBoxRef}
               className="rounded-2xl p-8 lg:p-12 lg:mr-[-10%]"
               style={{ 
-                backgroundColor: 'var(--card)',
+                backgroundColor: 'hsl(var(--card))',
                 boxShadow: 'var(--shadow-lg)'
               }}
             >
               <p 
                 className="font-sans text-sm uppercase tracking-[4px] mb-4"
-                style={{ color: 'var(--primary)' }}
+                style={{ color: 'hsl(var(--primary))' }}
               >
                 For Talent
               </p>
 
               <h2 
                 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold mb-6"
-                style={{ color: 'var(--foreground)' }}
+                style={{ color: 'hsl(var(--foreground))' }}
               >
                 Ready to be recommended?
               </h2>
 
               <p 
                 className="font-sans text-lg mb-8 leading-relaxed"
-                style={{ color: 'var(--muted-foreground)' }}
+                style={{ color: 'hsl(var(--muted-foreground))' }}
               >
                 Submit your profile to our vetted talent pool. When sponsors are
                 looking for candidates, you'll be on their radar. Your next
@@ -118,11 +118,11 @@ const ForTalentSection = () => {
                   <li
                     key={index}
                     className="flex items-center gap-3 font-sans text-base"
-                    style={{ color: 'var(--foreground)' }}
+                    style={{ color: 'hsl(var(--foreground))' }}
                   >
                     <span
                       className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: 'var(--primary)' }}
+                      style={{ backgroundColor: 'hsl(var(--primary))' }}
                     >
                       <Check size={14} className="text-white" />
                     </span>
@@ -135,8 +135,8 @@ const ForTalentSection = () => {
                 to="/for-talent"
                 className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-semibold transition-all duration-300 hover:-translate-y-1"
                 style={{ 
-                  backgroundColor: 'var(--primary)', 
-                  color: 'var(--primary-foreground)',
+                  backgroundColor: 'hsl(var(--primary))', 
+                  color: 'hsl(var(--primary-foreground))',
                   boxShadow: 'var(--shadow)'
                 }}
               >
@@ -161,7 +161,7 @@ const ForTalentSection = () => {
               {/* Overlay gradient */}
               <div 
                 className="absolute inset-0 lg:block hidden"
-                style={{ background: 'linear-gradient(to right, var(--background)/50, transparent, transparent)' }}
+                style={{ background: 'linear-gradient(to right, hsl(var(--background) / 0.5), transparent, transparent)' }}
               />
             </div>
           </div>

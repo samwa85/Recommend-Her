@@ -2,8 +2,8 @@
 // ADMIN DATA HOOKS - Using Shared Data Layer
 // ============================================================================
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { useState, useEffect, useCallback, useRef } from 'react';
+// Imports from @/lib/insforge/client removed - not used
 import type { 
   TalentProfile,
   SponsorProfile,
@@ -37,6 +37,8 @@ import {
   getDashboardMetrics,
   getSubmissionsTrend,
   getRecentActivity,
+  addMessageReply,
+  getMessageReplies,
   type DashboardMetrics,
 } from '@/lib/queries';
 
@@ -69,8 +71,20 @@ export function useTalentList(options: UseTalentListOptions = {}) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track last fetch time to prevent rapid re-fetches
+  const lastFetchTime = useRef<number>(0);
+  const minFetchInterval = 500; // Minimum 500ms between fetches
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (force = false) => {
+    // Rate limiting protection - prevent fetches within 500ms of each other
+    const now = Date.now();
+    if (!force && now - lastFetchTime.current < minFetchInterval) {
+      console.log('[useTalentList] Skipping fetch - too soon');
+      return;
+    }
+    lastFetchTime.current = now;
+    
     setIsLoading(true);
     setError(null);
 
@@ -79,7 +93,28 @@ export function useTalentList(options: UseTalentListOptions = {}) {
       if (result.error) throw result.error;
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch talent');
+      // Handle different error types
+      let errorMessage = 'Failed to fetch talent';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        // Handle API error objects
+        const errRecord = err as Record<string, unknown>;
+        if (errRecord['message']) errorMessage = String(errRecord['message']);
+        else if (errRecord['error']) errorMessage = String(errRecord['error']);
+        else errorMessage = JSON.stringify(err);
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      // Check for rate limiting
+      if (errorMessage.includes('429') || errorMessage.includes('Too many requests')) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+      }
+      
+      console.error('[useTalentList] Error:', err);
+      setError(errorMessage);
+      // Keep previous data on error
     } finally {
       setIsLoading(false);
     }
@@ -92,29 +127,15 @@ export function useTalentList(options: UseTalentListOptions = {}) {
   // Auto-refresh
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchData, refreshInterval);
+    const interval = setInterval(() => fetchData(true), refreshInterval);
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, fetchData]);
-
-  // Real-time subscription
-  useEffect(() => {
-    const subscription = supabase
-      .channel('talent-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'talent_profiles' }, () => {
-        fetchData();
-      })
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [fetchData]);
 
   return {
     data,
     isLoading,
     error,
-    refresh: fetchData,
+    refresh: () => fetchData(true),
   };
 }
 
@@ -187,6 +208,7 @@ interface UseSponsorListOptions {
   filters?: SponsorFilters;
   pagination?: PaginationParams;
   autoRefresh?: boolean;
+  refreshInterval?: number;
 }
 
 export function useSponsorList(options: UseSponsorListOptions = {}) {
@@ -194,6 +216,7 @@ export function useSponsorList(options: UseSponsorListOptions = {}) {
     filters = {},
     pagination = { page: 1, perPage: 10 },
     autoRefresh = false,
+    refreshInterval = 30000,
   } = options;
 
   const [data, setData] = useState<PaginatedResult<SponsorProfile>>({
@@ -206,16 +229,48 @@ export function useSponsorList(options: UseSponsorListOptions = {}) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track last fetch time to prevent rapid re-fetches
+  const lastFetchTime = useRef<number>(0);
+  const minFetchInterval = 500; // Minimum 500ms between fetches
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (force = false) => {
+    // Rate limiting protection - prevent fetches within 500ms of each other
+    const now = Date.now();
+    if (!force && now - lastFetchTime.current < minFetchInterval) {
+      console.log('[useSponsorList] Skipping fetch - too soon');
+      return;
+    }
+    lastFetchTime.current = now;
+    
     setIsLoading(true);
     setError(null);
+
     try {
       const result = await listSponsors({ filters, pagination });
       if (result.error) throw result.error;
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch sponsors');
+      // Handle different error types
+      let errorMessage = 'Failed to fetch sponsors';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        const errObj = err as Record<string, unknown>;
+        if (errObj['message']) errorMessage = String(errObj['message']);
+        else if (errObj['error']) errorMessage = String(errObj['error']);
+        else errorMessage = JSON.stringify(err);
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      // Check for rate limiting
+      if (errorMessage.includes('429') || errorMessage.includes('Too many requests')) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+      }
+      
+      console.error('[useSponsorList] Error:', err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -227,15 +282,15 @@ export function useSponsorList(options: UseSponsorListOptions = {}) {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(() => fetchData(true), refreshInterval);
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchData]);
+  }, [autoRefresh, refreshInterval, fetchData]);
 
   return {
     data,
     isLoading,
     error,
-    refresh: fetchData,
+    refresh: () => fetchData(true),
   };
 }
 
@@ -307,6 +362,7 @@ interface UseRequestListOptions {
   filters?: RequestFilters;
   pagination?: PaginationParams;
   autoRefresh?: boolean;
+  refreshInterval?: number;
 }
 
 export function useRequestList(options: UseRequestListOptions = {}) {
@@ -314,6 +370,7 @@ export function useRequestList(options: UseRequestListOptions = {}) {
     filters = {},
     pagination = { page: 1, perPage: 10 },
     autoRefresh = false,
+    refreshInterval = 30000,
   } = options;
 
   const [data, setData] = useState<PaginatedResult<Request>>({
@@ -326,16 +383,48 @@ export function useRequestList(options: UseRequestListOptions = {}) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track last fetch time to prevent rapid re-fetches
+  const lastFetchTime = useRef<number>(0);
+  const minFetchInterval = 500; // Minimum 500ms between fetches
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (force = false) => {
+    // Rate limiting protection - prevent fetches within 500ms of each other
+    const now = Date.now();
+    if (!force && now - lastFetchTime.current < minFetchInterval) {
+      console.log('[useRequestList] Skipping fetch - too soon');
+      return;
+    }
+    lastFetchTime.current = now;
+    
     setIsLoading(true);
     setError(null);
+
     try {
       const result = await listRequests({ filters, pagination, withRelations: true });
       if (result.error) throw result.error;
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch requests');
+      // Handle different error types
+      let errorMessage = 'Failed to fetch requests';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        const errRecord = err as Record<string, unknown>;
+        if (errRecord['message']) errorMessage = String(errRecord['message']);
+        else if (errRecord['error']) errorMessage = String(errRecord['error']);
+        else errorMessage = JSON.stringify(err);
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      // Check for rate limiting
+      if (errorMessage.includes('429') || errorMessage.includes('Too many requests')) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+      }
+      
+      console.error('[useRequestList] Error:', err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -347,15 +436,15 @@ export function useRequestList(options: UseRequestListOptions = {}) {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(() => fetchData(true), refreshInterval);
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchData]);
+  }, [autoRefresh, refreshInterval, fetchData]);
 
   return {
     data,
     isLoading,
     error,
-    refresh: fetchData,
+    refresh: () => fetchData(true),
   };
 }
 
@@ -413,6 +502,7 @@ interface UseMessageListOptions {
   filters?: MessageFilters;
   pagination?: PaginationParams;
   autoRefresh?: boolean;
+  refreshInterval?: number;
 }
 
 export function useMessageList(options: UseMessageListOptions = {}) {
@@ -420,6 +510,7 @@ export function useMessageList(options: UseMessageListOptions = {}) {
     filters = {},
     pagination = { page: 1, perPage: 10 },
     autoRefresh = false,
+    refreshInterval = 30000,
   } = options;
 
   const [data, setData] = useState<PaginatedResult<Message>>({
@@ -432,16 +523,48 @@ export function useMessageList(options: UseMessageListOptions = {}) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track last fetch time to prevent rapid re-fetches
+  const lastFetchTime = useRef<number>(0);
+  const minFetchInterval = 500; // Minimum 500ms between fetches
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (force = false) => {
+    // Rate limiting protection - prevent fetches within 500ms of each other
+    const now = Date.now();
+    if (!force && now - lastFetchTime.current < minFetchInterval) {
+      console.log('[useMessageList] Skipping fetch - too soon');
+      return;
+    }
+    lastFetchTime.current = now;
+    
     setIsLoading(true);
     setError(null);
+
     try {
       const result = await listMessages({ filters, pagination });
       if (result.error) throw result.error;
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch messages');
+      // Handle different error types
+      let errorMessage = 'Failed to fetch messages';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        const errRecord = err as Record<string, unknown>;
+        if (errRecord['message']) errorMessage = String(errRecord['message']);
+        else if (errRecord['error']) errorMessage = String(errRecord['error']);
+        else errorMessage = JSON.stringify(err);
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      // Check for rate limiting
+      if (errorMessage.includes('429') || errorMessage.includes('Too many requests')) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+      }
+      
+      console.error('[useMessageList] Error:', err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -453,32 +576,38 @@ export function useMessageList(options: UseMessageListOptions = {}) {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(() => fetchData(true), refreshInterval);
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchData]);
+  }, [autoRefresh, refreshInterval, fetchData]);
 
   return {
     data,
     isLoading,
     error,
-    refresh: fetchData,
+    refresh: () => fetchData(true),
   };
 }
 
 export function useMessageDetail(id: string | null) {
   const [data, setData] = useState<Message | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [replies, setReplies] = useState<Array<{ id: string; reply_text: string; created_at: string; admin_name?: string }>>([]);
 
   useEffect(() => {
     if (!id) {
       setData(null);
+      setReplies([]);
       return;
     }
 
     const fetchData = async () => {
       setIsLoading(true);
-      const result = await getMessageById(id);
-      setData(result.data);
+      const [msgResult, repliesResult] = await Promise.all([
+        getMessageById(id),
+        getMessageReplies(id),
+      ]);
+      setData(msgResult.data);
+      setReplies(repliesResult.data || []);
       setIsLoading(false);
     };
 
@@ -498,14 +627,40 @@ export function useMessageDetail(id: string | null) {
     }
   }, [id]);
 
+  const addReply = useCallback(async (replyText: string) => {
+    if (!id) return { success: false, error: new Error('No message ID') };
+    try {
+      const result = await addMessageReply(id, replyText);
+      if (!result.success) throw result.error || new Error('Failed to save reply');
+      
+      // Refresh data
+      const [updated, repliesResult] = await Promise.all([
+        getMessageById(id),
+        getMessageReplies(id),
+      ]);
+      setData(updated.data);
+      setReplies(repliesResult.data || []);
+      
+      return { success: true, error: null };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err : new Error(String(err)) };
+    }
+  }, [id]);
+
   return {
     data,
     isLoading,
+    replies,
     updateStatus,
+    addReply,
     refresh: async () => {
       if (id) {
-        const result = await getMessageById(id);
-        setData(result.data);
+        const [msgResult, repliesResult] = await Promise.all([
+          getMessageById(id),
+          getMessageReplies(id),
+        ]);
+        setData(msgResult.data);
+        setReplies(repliesResult.data || []);
       }
     },
   };
@@ -527,10 +682,23 @@ export function useDashboardMetrics(options: UseDashboardMetricsOptions = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  
+  // Track last fetch time to prevent rapid re-fetches
+  const lastFetchTime = useRef<number>(0);
+  const minFetchInterval = 500; // Minimum 500ms between fetches
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (force = false) => {
+    // Rate limiting protection - prevent fetches within 500ms of each other
+    const now = Date.now();
+    if (!force && now - lastFetchTime.current < minFetchInterval) {
+      console.log('[useDashboardMetrics] Skipping fetch - too soon');
+      return;
+    }
+    lastFetchTime.current = now;
+    
     setIsLoading(true);
     setError(null);
+
     try {
       console.log('[Dashboard] Fetching metrics...');
       const result = await getDashboardMetrics();
@@ -540,8 +708,26 @@ export function useDashboardMetrics(options: UseDashboardMetricsOptions = {}) {
       setLastUpdated(new Date());
       console.log('[Dashboard] Metrics loaded:', result.data);
     } catch (err) {
+      // Handle different error types
+      let errorMessage = 'Failed to fetch metrics';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        const errRecord = err as Record<string, unknown>;
+        if (errRecord['message']) errorMessage = String(errRecord['message']);
+        else if (errRecord['error']) errorMessage = String(errRecord['error']);
+        else errorMessage = JSON.stringify(err);
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      // Check for rate limiting
+      if (errorMessage.includes('429') || errorMessage.includes('Too many requests')) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+      }
+      
       console.error('[Dashboard] Error fetching metrics:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch metrics');
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -553,7 +739,7 @@ export function useDashboardMetrics(options: UseDashboardMetricsOptions = {}) {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchData, refreshInterval);
+    const interval = setInterval(() => fetchData(true), refreshInterval);
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, fetchData]);
 
@@ -562,7 +748,7 @@ export function useDashboardMetrics(options: UseDashboardMetricsOptions = {}) {
     isLoading,
     error,
     lastUpdated,
-    refresh: fetchData,
+    refresh: () => fetchData(true),
   };
 }
 
@@ -612,24 +798,57 @@ export function useAnalytics(options: UseAnalyticsOptions = {}) {
 interface UseActivityLogsOptions {
   limit?: number;
   autoRefresh?: boolean;
+  refreshInterval?: number;
 }
 
 export function useActivityLogs(options: UseActivityLogsOptions = {}) {
-  const { limit = 10, autoRefresh = false } = options;
+  const { limit = 10, autoRefresh = false, refreshInterval = 60000 } = options;
 
   const [data, setData] = useState<Awaited<ReturnType<typeof getRecentActivity>>['data']>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track last fetch time to prevent rapid re-fetches
+  const lastFetchTime = useRef<number>(0);
+  const minFetchInterval = 500; // Minimum 500ms between fetches
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (force = false) => {
+    // Rate limiting protection - prevent fetches within 500ms of each other
+    const now = Date.now();
+    if (!force && now - lastFetchTime.current < minFetchInterval) {
+      console.log('[useActivityLogs] Skipping fetch - too soon');
+      return;
+    }
+    lastFetchTime.current = now;
+    
     setIsLoading(true);
     setError(null);
+
     try {
       const result = await getRecentActivity(limit);
       if (result.error) throw result.error;
       setData(result.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch activity');
+      // Handle different error types
+      let errorMessage = 'Failed to fetch activity';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        const errRecord = err as Record<string, unknown>;
+        if (errRecord['message']) errorMessage = String(errRecord['message']);
+        else if (errRecord['error']) errorMessage = String(errRecord['error']);
+        else errorMessage = JSON.stringify(err);
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      // Check for rate limiting
+      if (errorMessage.includes('429') || errorMessage.includes('Too many requests')) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+      }
+      
+      console.error('[useActivityLogs] Error:', err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -641,15 +860,15 @@ export function useActivityLogs(options: UseActivityLogsOptions = {}) {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchData, 60000);
+    const interval = setInterval(() => fetchData(true), refreshInterval);
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchData]);
+  }, [autoRefresh, refreshInterval, fetchData]);
 
   return {
     data,
     isLoading,
     error,
-    refresh: fetchData,
+    refresh: () => fetchData(true),
   };
 }
 
@@ -706,16 +925,11 @@ export function useUnreadMessagesCount() {
 
     fetchCount();
 
-    // Subscribe to changes
-    const subscription = supabase
-      .channel('messages-count')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-        fetchCount();
-      })
-      .subscribe();
+    // Polling for updates (InsForge doesn't use websockets)
+    const interval = setInterval(fetchCount, 30000);
 
     return () => {
-      subscription.unsubscribe();
+      clearInterval(interval);
     };
   }, []);
 

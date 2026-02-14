@@ -1,346 +1,373 @@
-# RecommendHer Schema Reference - Single Source of Truth
+# RecommendHer Database Schema Reference
 
-## 📋 FINAL TABLE STRUCTURES
-
----
-
-### Table: `files`
-
-**Purpose**: File metadata for CVs and attachments
-
-| Column | Type | Default | Nullable | Constraints |
-|--------|------|---------|----------|-------------|
-| `id` | uuid | gen_random_uuid() | NO | PRIMARY KEY |
-| `owner_type` | text | - | NO | CHECK IN ('talent', 'sponsor', 'request', 'message') |
-| `owner_id` | uuid | - | NO | - |
-| `bucket` | text | 'recommendher-files' | NO | - |
-| `path` | text | - | NO | UNIQUE |
-| `file_name` | text | - | NO | - |
-| `mime_type` | text | NULL | YES | - |
-| `file_size` | bigint | NULL | YES | - |
-| `public_url` | text | NULL | YES | - |
-| `is_primary` | boolean | false | YES | - |
-| `created_at` | timestamptz | NOW() | YES | - |
-
-**Indexes**:
-- `idx_files_owner` (owner_type, owner_id)
-- `idx_files_created_at` (created_at DESC)
-- `idx_files_owner_primary` (owner_type, owner_id, is_primary) WHERE is_primary = true
+**Last Updated:** 2026-02-14  
+**Version:** 2.0
 
 ---
 
-### Table: `talent_profiles`
+## Overview
 
-**Purpose**: Talent/Candidate profiles
-
-| Column | Type | Default | Nullable | Constraints |
-|--------|------|---------|----------|-------------|
-| `id` | uuid | gen_random_uuid() | NO | PRIMARY KEY |
-| `full_name` | text | - | NO | - |
-| `email` | text | - | NO | UNIQUE |
-| `phone` | text | NULL | YES | - |
-| `location` | text | NULL | YES | - |
-| `country` | text | 'Tanzania' | YES | - |
-| `headline` | text | NULL | YES | - |
-| `bio` | text | NULL | YES | - |
-| `current_company` | text | NULL | YES | - |
-| `current_title` | text | NULL | YES | - |
-| `years_experience` | integer | NULL | YES | - |
-| `industry` | text | NULL | YES | - |
-| `role_category` | text | NULL | YES | - |
-| `skills` | jsonb | '[]' | YES | - |
-| `linkedin_url` | text | NULL | YES | - |
-| `portfolio_url` | text | NULL | YES | - |
-| `website_url` | text | NULL | YES | - |
-| `cv_file_id` | uuid | NULL | YES | FOREIGN KEY → files(id) |
-| `status` | text | 'pending' | NO | CHECK IN ('pending', 'approved', 'rejected', 'archived') |
-| `source_page` | text | NULL | YES | - |
-| `notes_admin` | text | NULL | YES | - |
-| `created_at` | timestamptz | NOW() | YES | - |
-| `updated_at` | timestamptz | NOW() | YES | - |
-
-**Indexes**:
-- `idx_talent_profiles_status` (status)
-- `idx_talent_profiles_created_at` (created_at DESC)
-- `idx_talent_profiles_status_created` (status, created_at DESC)
-- `idx_talent_profiles_email` (email)
-- `idx_talent_profiles_phone` (phone)
-- `idx_talent_profiles_industry` (industry)
-- `idx_talent_profiles_cv_file` (cv_file_id) WHERE cv_file_id IS NOT NULL
-
-**Trigger**: `update_talent_profiles_updated_at` (on UPDATE)
+This document describes the complete database schema for the RecommendHer platform, designed to support the admin dashboard with pages for **Overview**, **Talent**, **Sponsors**, **Requests**, **Messages**, and **Analytics**.
 
 ---
 
-### Table: `sponsor_profiles`
+## Tables Summary
 
-**Purpose**: Sponsor/Mentor/Recruiter profiles
-
-| Column | Type | Default | Nullable | Constraints |
-|--------|------|---------|----------|-------------|
-| `id` | uuid | gen_random_uuid() | NO | PRIMARY KEY |
-| `full_name` | text | - | NO | - |
-| `email` | text | - | NO | UNIQUE |
-| `phone` | text | NULL | YES | - |
-| `organization` | text | NULL | YES | - |
-| `job_title` | text | NULL | YES | - |
-| `industry` | text | NULL | YES | - |
-| `linkedin_url` | text | NULL | YES | - |
-| `sponsor_type` | text | 'individual' | YES | CHECK IN ('individual', 'company', 'community') |
-| `commitment_level` | text | NULL | YES | - |
-| `focus_areas` | jsonb | '[]' | YES | - |
-| `status` | text | 'active' | YES | CHECK IN ('active', 'inactive', 'archived') |
-| `notes_admin` | text | NULL | YES | - |
-| `created_at` | timestamptz | NOW() | YES | - |
-| `updated_at` | timestamptz | NOW() | YES | - |
-
-**Indexes**:
-- `idx_sponsor_profiles_status` (status)
-- `idx_sponsor_profiles_created_at` (created_at DESC)
-- `idx_sponsor_profiles_status_created` (status, created_at DESC)
-- `idx_sponsor_profiles_email` (email)
-- `idx_sponsor_profiles_organization` (organization)
-
-**Trigger**: `update_sponsor_profiles_updated_at` (on UPDATE)
+| Table | Description | Admin Page |
+|-------|-------------|------------|
+| `talent_profiles` | Talent/candidate submissions | Talent |
+| `sponsor_profiles` | Sponsor/mentor profiles | Sponsors |
+| `requests` | Recommendation & intro requests | Requests |
+| `messages` | Contact form submissions | Messages |
+| `files` | CV & document storage metadata | All (via relations) |
+| `admin_users` | Admin dashboard users | Settings |
+| `audit_logs` | Action tracking | Activity Log |
 
 ---
 
-### Table: `requests`
+## Table Definitions
 
-**Purpose**: Recommendation requests and sponsorship introductions
+### 1. `files`
 
-| Column | Type | Default | Nullable | Constraints |
-|--------|------|---------|----------|-------------|
-| `id` | uuid | gen_random_uuid() | NO | PRIMARY KEY |
-| `request_type` | text | - | NO | CHECK IN ('recommendation', 'sponsorship_intro', 'talent_match', 'general') |
-| `title` | text | NULL | YES | - |
-| `description` | text | - | NO | - |
-| `talent_id` | uuid | NULL | YES | FOREIGN KEY → talent_profiles(id) |
-| `sponsor_id` | uuid | NULL | YES | FOREIGN KEY → sponsor_profiles(id) |
-| `priority` | text | 'normal' | YES | CHECK IN ('low', 'normal', 'high', 'urgent') |
-| `status` | text | 'open' | YES | CHECK IN ('open', 'in_review', 'approved', 'rejected', 'closed') |
-| `assigned_admin_id` | uuid | NULL | YES | - |
-| `due_date` | date | NULL | YES | - |
-| `resolution_notes` | text | NULL | YES | - |
-| `source_page` | text | NULL | YES | - |
-| `created_at` | timestamptz | NOW() | YES | - |
-| `updated_at` | timestamptz | NOW() | YES | - |
+File metadata for CVs and attachments stored in Supabase Storage.
 
-**Indexes**:
-- `idx_requests_status` (status)
-- `idx_requests_priority` (priority)
-- `idx_requests_created_at` (created_at DESC)
-- `idx_requests_status_priority` (status, priority, created_at DESC)
-- `idx_requests_talent_id` (talent_id) WHERE talent_id IS NOT NULL
-- `idx_requests_sponsor_id` (sponsor_id) WHERE sponsor_id IS NOT NULL
-- `idx_requests_assigned` (assigned_admin_id) WHERE assigned_admin_id IS NOT NULL
-- `idx_requests_due_date` (due_date) WHERE due_date IS NOT NULL
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | UUID | NO | `gen_random_uuid()` | Primary key |
+| `owner_type` | TEXT | NO | - | One of: `talent`, `sponsor`, `request`, `message` |
+| `owner_id` | UUID | NO | - | ID of the owner record |
+| `bucket` | TEXT | NO | `'recommendher-files'` | Storage bucket name |
+| `path` | TEXT | NO | - | Unique storage path |
+| `file_name` | TEXT | NO | - | Original filename |
+| `mime_type` | TEXT | YES | - | File MIME type |
+| `file_size` | BIGINT | YES | - | File size in bytes |
+| `public_url` | TEXT | YES | - | Public access URL |
+| `is_primary` | BOOLEAN | NO | `false` | Main CV flag |
+| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Upload timestamp |
 
-**Trigger**: `update_requests_updated_at` (on UPDATE)
-
----
-
-### Table: `messages`
-
-**Purpose**: Contact form submissions and inquiries
-
-| Column | Type | Default | Nullable | Constraints |
-|--------|------|---------|----------|-------------|
-| `id` | uuid | gen_random_uuid() | NO | PRIMARY KEY |
-| `sender_name` | text | - | NO | - |
-| `sender_email` | text | - | NO | - |
-| `sender_phone` | text | NULL | YES | - |
-| `subject` | text | NULL | YES | - |
-| `message` | text | - | NO | - |
-| `page_source` | text | NULL | YES | - |
-| `status` | text | 'unread' | YES | CHECK IN ('unread', 'read', 'replied', 'archived', 'spam') |
-| `handled_by_admin_id` | uuid | NULL | YES | - |
-| `replied_at` | timestamptz | NULL | YES | - |
-| `created_at` | timestamptz | NOW() | YES | - |
-
-**Indexes**:
-- `idx_messages_status` (status)
-- `idx_messages_created_at` (created_at DESC)
-- `idx_messages_status_created` (status, created_at DESC)
-- `idx_messages_sender_email` (sender_email)
-- `idx_messages_handled_by` (handled_by_admin_id) WHERE handled_by_admin_id IS NOT NULL
-
----
-
-## 🔗 Relationships
-
+**Storage Path Convention:**
 ```
-talent_profiles.cv_file_id ────────> files.id (ONE-TO-ONE, nullable)
-sponsor_profiles (no FKs)
-requests.talent_id ────────────────> talent_profiles.id (MANY-TO-ONE, nullable)
-requests.sponsor_id ───────────────> sponsor_profiles.id (MANY-TO-ONE, nullable)
-messages (no FKs)
-files.owner_id ────────────────────> polymorphic (talent_profiles.id OR sponsor_profiles.id OR requests.id OR messages.id)
+talent/{talent_id}/cv/{timestamp}_{filename}
+sponsor/{sponsor_id}/attachments/{timestamp}_{filename}
+request/{request_id}/attachments/{timestamp}_{filename}
+message/{message_id}/attachments/{timestamp}_{filename}
 ```
 
 ---
 
-## ✅ ENUM Values
+### 2. `talent_profiles`
 
-### talent_profiles.status
-- `pending` - Pending review
-- `approved` - Approved and visible
-- `rejected` - Rejected
-- `archived` - Archived
+Stores all "For Talent" form submissions.
 
-### sponsor_profiles.sponsor_type
-- `individual` - Individual sponsor
-- `company` - Company/Organization
-- `community` - Community group
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | UUID | NO | `gen_random_uuid()` | Primary key |
+| `full_name` | TEXT | NO | - | Full name |
+| `email` | TEXT | NO | - | Email (unique) |
+| `phone` | TEXT | YES | - | Phone number |
+| `location` | TEXT | YES | - | City/region |
+| `country` | TEXT | NO | `'Tanzania'` | Country |
+| `headline` | TEXT | YES | - | Professional headline |
+| `bio` | TEXT | YES | - | Bio/about text |
+| `current_company` | TEXT | YES | - | Current employer |
+| `current_title` | TEXT | YES | - | Current job title |
+| `years_experience` | INTEGER | YES | - | Years of experience |
+| `industry` | TEXT | YES | - | Industry field |
+| `role_category` | TEXT | YES | - | Role category |
+| `skills` | JSONB | NO | `'[]'::jsonb` | Array of skills |
+| `linkedin_url` | TEXT | YES | - | LinkedIn profile URL |
+| `portfolio_url` | TEXT | YES | - | Portfolio website URL |
+| `website_url` | TEXT | YES | - | Personal website URL |
+| `cv_file_id` | UUID | YES | - | FK to `files.id` |
+| `status` | TEXT | NO | `'pending'` | Status (see below) |
+| `source_page` | TEXT | YES | - | Source page tracking |
+| `notes_admin` | TEXT | YES | - | Internal admin notes |
+| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | NO | `NOW()` | Last update timestamp |
 
-### sponsor_profiles.status
-- `active` - Active sponsor
-- `inactive` - Inactive
-- `archived` - Archived
-
-### requests.request_type
-- `recommendation` - Talent recommendation
-- `sponsorship_intro` - Introduction to sponsor
-- `talent_match` - Match talent to opportunity
-- `general` - General inquiry
-
-### requests.priority
-- `low` - Low priority
-- `normal` - Normal priority
-- `high` - High priority
-- `urgent` - Urgent
-
-### requests.status
-- `open` - Open request
-- `in_review` - Under review
-- `approved` - Approved
-- `rejected` - Rejected
-- `closed` - Closed
-
-### messages.status
-- `unread` - Unread message
-- `read` - Read
-- `replied` - Replied
-- `archived` - Archived
-- `spam` - Marked as spam
-
-### files.owner_type
-- `talent` - Belongs to talent profile
-- `sponsor` - Belongs to sponsor profile
-- `request` - Belongs to request
-- `message` - Belongs to message
+**Status Values:** `pending` | `approved` | `rejected` | `archived`
 
 ---
 
-## 📊 Views
+### 3. `sponsor_profiles`
 
-### v_talent_status_counts
-```sql
-SELECT status, count, last_7_days, last_30_days
-FROM v_talent_status_counts;
+Stores "For Sponsors" form submissions.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | UUID | NO | `gen_random_uuid()` | Primary key |
+| `full_name` | TEXT | NO | - | Full name |
+| `email` | TEXT | NO | - | Email (unique) |
+| `phone` | TEXT | YES | - | Phone number |
+| `organization` | TEXT | YES | - | Company/organization |
+| `job_title` | TEXT | YES | - | Job title |
+| `industry` | TEXT | YES | - | Industry field |
+| `linkedin_url` | TEXT | YES | - | LinkedIn profile URL |
+| `sponsor_type` | TEXT | NO | `'individual'` | Type (see below) |
+| `commitment_level` | TEXT | YES | - | Commitment type |
+| `focus_areas` | JSONB | NO | `'[]'::jsonb` | Focus areas array |
+| `status` | TEXT | NO | `'active'` | Status (see below) |
+| `notes_admin` | TEXT | YES | - | Internal admin notes |
+| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | NO | `NOW()` | Last update timestamp |
+
+**Sponsor Types:** `individual` | `company` | `community`  
+**Status Values:** `active` | `inactive` | `archived`
+
+---
+
+### 4. `requests`
+
+Recommendation requests, sponsorship intros, and talent matching.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | UUID | NO | `gen_random_uuid()` | Primary key |
+| `request_type` | TEXT | NO | - | Type (see below) |
+| `title` | TEXT | YES | - | Request title/summary |
+| `description` | TEXT | NO | - | Detailed description |
+| `talent_id` | UUID | YES | - | FK to `talent_profiles.id` |
+| `sponsor_id` | UUID | YES | - | FK to `sponsor_profiles.id` |
+| `priority` | TEXT | NO | `'normal'` | Priority level |
+| `status` | TEXT | NO | `'open'` | Status (see below) |
+| `assigned_admin_id` | UUID | YES | - | FK to `admin_users.id` |
+| `due_date` | DATE | YES | - | Due date |
+| `resolution_notes` | TEXT | YES | - | Resolution details |
+| `source_page` | TEXT | YES | - | Source page tracking |
+| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | NO | `NOW()` | Last update timestamp |
+
+**Request Types:** `recommendation` | `sponsorship_intro` | `talent_match` | `general`  
+**Priority Values:** `low` | `normal` | `high` | `urgent`  
+**Status Values:** `open` | `in_review` | `approved` | `rejected` | `closed`
+
+---
+
+### 5. `messages`
+
+Contact form submissions and inquiries.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | UUID | NO | `gen_random_uuid()` | Primary key |
+| `sender_name` | TEXT | NO | - | Sender's name |
+| `sender_email` | TEXT | NO | - | Sender's email |
+| `sender_phone` | TEXT | YES | - | Sender's phone |
+| `subject` | TEXT | YES | - | Message subject |
+| `message` | TEXT | NO | - | Message content |
+| `page_source` | TEXT | YES | - | Source page |
+| `status` | TEXT | NO | `'unread'` | Status (see below) |
+| `handled_by_admin_id` | UUID | YES | - | FK to `admin_users.id` |
+| `replied_at` | TIMESTAMPTZ | YES | - | Reply timestamp |
+| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Creation timestamp |
+
+**Status Values:** `unread` | `read` | `replied` | `archived` | `spam`
+
+---
+
+### 6. `admin_users`
+
+Admin dashboard users with role-based access.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | UUID | NO | `gen_random_uuid()` | Primary key |
+| `auth_user_id` | UUID | YES | - | Supabase Auth user ID |
+| `full_name` | TEXT | NO | - | Full name |
+| `email` | TEXT | NO | - | Email (unique) |
+| `avatar_url` | TEXT | YES | - | Avatar image URL |
+| `role` | TEXT | NO | `'admin'` | Role (see below) |
+| `is_active` | BOOLEAN | NO | `true` | Active status |
+| `last_login_at` | TIMESTAMPTZ | YES | - | Last login timestamp |
+| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | NO | `NOW()` | Last update timestamp |
+
+**Roles:** `super_admin` | `admin` | `viewer`
+
+---
+
+### 7. `audit_logs`
+
+Audit trail for all admin actions.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | UUID | NO | `gen_random_uuid()` | Primary key |
+| `admin_id` | UUID | YES | - | FK to `admin_users.id` |
+| `admin_email` | TEXT | YES | - | Email at action time |
+| `action` | TEXT | NO | - | Action type (see below) |
+| `entity_type` | TEXT | NO | - | Entity type (see below) |
+| `entity_id` | UUID | YES | - | Affected entity ID |
+| `before_data` | JSONB | YES | - | State before action |
+| `after_data` | JSONB | YES | - | State after action |
+| `ip_address` | TEXT | YES | - | Client IP address |
+| `user_agent` | TEXT | YES | - | Client user agent |
+| `metadata` | JSONB | NO | `'{}'::jsonb` | Additional metadata |
+| `created_at` | TIMESTAMPTZ | NO | `NOW()` | Action timestamp |
+
+**Actions:** `created` | `updated` | `deleted` | `status_changed` | `viewed` | `downloaded` | `exported` | `logged_in` | `logged_out`  
+**Entity Types:** `talent` | `sponsor` | `request` | `message` | `file` | `admin_user` | `system`
+
+---
+
+## Relationships
+
 ```
+files ←───────────────── talent_profiles (cv_file_id)
+    │
+    └── owner_id ─────── talent_profiles (owner_type='talent')
+                       sponsor_profiles (owner_type='sponsor')
+                       requests (owner_type='request')
+                       messages (owner_type='message')
 
-### v_sponsor_status_counts
-```sql
-SELECT status, count, last_7_days
-FROM v_sponsor_status_counts;
-```
-
-### v_request_status_counts
-```sql
-SELECT status, priority, count, last_7_days
-FROM v_request_status_counts;
-```
-
-### v_message_status_counts
-```sql
-SELECT status, count, last_24_hours
-FROM v_message_status_counts;
+talent_profiles ←─────── requests (talent_id)
+sponsor_profiles ←────── requests (sponsor_id)
+admin_users ←─────────── requests (assigned_admin_id)
+admin_users ←─────────── messages (handled_by_admin_id)
+admin_users ←─────────── audit_logs (admin_id)
 ```
 
 ---
 
-## ⚙️ Functions
+## Indexes
 
-### get_dashboard_metrics()
-Returns: `total_talent, pending_talent, approved_talent, rejected_talent, total_sponsors, active_sponsors, total_requests, open_requests, total_messages, unread_messages, new_talent_7d, new_sponsors_7d`
+### Performance Indexes
 
-### get_submissions_trend(days INTEGER)
-Returns: `date, talent_count, sponsor_count, request_count, message_count`
-
----
-
-## 🔐 RLS Policies Summary
-
-| Table | INSERT | SELECT | UPDATE | DELETE |
-|-------|--------|--------|--------|--------|
-| talent_profiles | Public | Public (approved only), Auth (all) | Auth | Auth |
-| sponsor_profiles | Public | Auth | Auth | Auth |
-| requests | Public | Auth | Auth | Auth |
-| messages | Public | Auth | Auth | Auth |
-| files | Public | Auth | Auth | Auth |
-
----
-
-## 📁 Storage
-
-**Bucket**: `recommendher-files` (Public)
-
-**Folder Structure**:
-```
-recommendher-files/
-├── talent/{talent_id}/cv/{timestamp}_{filename}
-├── sponsor/{sponsor_id}/documents/{filename}
-├── request/{request_id}/attachments/{filename}
-└── message/{message_id}/attachments/{filename}
-```
+| Table | Index | Purpose |
+|-------|-------|---------|
+| `talent_profiles` | `idx_talent_profiles_status` | Filter by status |
+| `talent_profiles` | `idx_talent_profiles_created_at` | Sort by date |
+| `talent_profiles` | `idx_talent_profiles_email` | Email lookup |
+| `talent_profiles` | `idx_talent_profiles_industry` | Filter by industry |
+| `sponsor_profiles` | `idx_sponsor_profiles_status` | Filter by status |
+| `sponsor_profiles` | `idx_sponsor_profiles_created_at` | Sort by date |
+| `sponsor_profiles` | `idx_sponsor_profiles_email` | Email lookup |
+| `sponsor_profiles` | `idx_sponsor_profiles_organization` | Organization search |
+| `requests` | `idx_requests_status` | Filter by status |
+| `requests` | `idx_requests_priority` | Filter by priority |
+| `requests` | `idx_requests_created_at` | Sort by date |
+| `requests` | `idx_requests_talent_id` | Talent lookup |
+| `requests` | `idx_requests_sponsor_id` | Sponsor lookup |
+| `messages` | `idx_messages_status` | Filter by status |
+| `messages` | `idx_messages_created_at` | Sort by date |
+| `messages` | `idx_messages_sender_email` | Email lookup |
+| `files` | `idx_files_owner` | Owner lookup |
+| `admin_users` | `idx_admin_users_email` | Email lookup |
+| `admin_users` | `idx_admin_users_role` | Role filter |
+| `audit_logs` | `idx_audit_logs_admin_id` | Admin lookup |
+| `audit_logs` | `idx_audit_logs_entity_type` | Entity filter |
+| `audit_logs` | `idx_audit_logs_created_at` | Sort by date |
 
 ---
 
-## 📝 TypeScript Mapping
+## Functions
 
-See `schema.types.ts` for complete TypeScript interfaces:
+### `get_dashboard_metrics()`
 
-```typescript
-interface TalentProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  // ... all columns
-}
-
-type TalentStatus = 'pending' | 'approved' | 'rejected' | 'archived';
-```
-
----
-
-## ✅ Schema Verification
-
-Run this to verify schema:
+Returns aggregate metrics for the admin dashboard overview.
 
 ```sql
--- Check tables
-SELECT tablename FROM pg_tables 
-WHERE schemaname = 'public' 
-ORDER BY tablename;
+SELECT * FROM get_dashboard_metrics();
+```
 
--- Check RLS
-SELECT tablename, rowsecurity FROM pg_tables 
-WHERE schemaname = 'public';
+**Returns:**
+- `total_talent`, `pending_talent`, `approved_talent`, `rejected_talent`
+- `total_sponsors`, `active_sponsors`
+- `total_requests`, `open_requests`
+- `total_messages`, `unread_messages`
+- `new_talent_7d`, `new_sponsors_7d`
 
--- Check indexes
-SELECT indexname, tablename FROM pg_indexes 
-WHERE schemaname = 'public' 
-ORDER BY tablename, indexname;
+### `update_updated_at_column()`
 
--- Check constraints
-SELECT conname, conrelid::regclass, pg_get_constraintdef(oid) 
-FROM pg_constraint 
-WHERE connamespace = 'public'::regnamespace;
+Trigger function that automatically updates the `updated_at` column on record modification.
+
+---
+
+## Storage Bucket
+
+### `recommendher-files`
+
+Public bucket for storing:
+- Talent CVs (PDF, DOC, DOCX)
+- Sponsor documents
+- Request attachments
+- Message attachments
+
+**Folder Structure:**
+```
+talent/{talent_id}/cv/{timestamp}_{filename}
+sponsor/{sponsor_id}/attachments/{timestamp}_{filename}
+request/{request_id}/attachments/{timestamp}_{filename}
+message/{message_id}/attachments/{timestamp}_{filename}
 ```
 
 ---
 
-**Document Version**: 1.0.0  
-**Last Updated**: 2026-02-12  
-**Schema File**: `001_recommendher_schema.sql`
+## Status Enums Summary
+
+### Talent Status
+| Status | Label | Color |
+|--------|-------|-------|
+| `pending` | Pending Review | Yellow |
+| `approved` | Approved | Green |
+| `rejected` | Rejected | Red |
+| `archived` | Archived | Gray |
+
+### Sponsor Status
+| Status | Label | Color |
+|--------|-------|-------|
+| `active` | Active | Green |
+| `inactive` | Inactive | Gray |
+| `archived` | Archived | Gray |
+
+### Request Status
+| Status | Label | Color |
+|--------|-------|-------|
+| `open` | Open | Blue |
+| `in_review` | In Review | Yellow |
+| `approved` | Approved | Green |
+| `rejected` | Rejected | Red |
+| `closed` | Closed | Gray |
+
+### Message Status
+| Status | Label | Color |
+|--------|-------|-------|
+| `unread` | Unread | Blue |
+| `read` | Read | Gray |
+| `replied` | Replied | Green |
+| `archived` | Archived | Gray |
+| `spam` | Spam | Red |
+
+---
+
+## Admin Dashboard Page Mapping
+
+| Page | Primary Table | Relations |
+|------|---------------|-----------|
+| Overview | All (aggregated) | - |
+| Talent | `talent_profiles` | `files` (CV) |
+| Sponsors | `sponsor_profiles` | - |
+| Requests | `requests` | `talent_profiles`, `sponsor_profiles`, `admin_users` |
+| Messages | `messages` | `admin_users` |
+| Analytics | All (aggregated) | - |
+| Activity | `audit_logs` | `admin_users` |
+
+---
+
+## Migration Files
+
+1. `001_recommendher_schema.sql` - Core tables (files, talent, sponsors, requests, messages)
+2. `002_storage_setup.sql` - Storage bucket policies
+3. `003_admin_and_audit.sql` - Admin users and audit logs
+
+---
+
+## TypeScript Types
+
+All types are defined in `src/lib/database.types.ts` and re-exported in `src/admin/lib/types.ts`.
+
+Key types:
+- `TalentProfile`, `SponsorProfile`, `Request`, `Message`
+- `AdminUser`, `AuditLog`, `File`
+- `TalentStatus`, `SponsorStatus`, `RequestStatus`, `MessageStatus`, `Priority`
+- `DashboardMetrics`, `RecentActivity`

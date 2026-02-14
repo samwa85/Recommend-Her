@@ -70,7 +70,7 @@ export const validators = {
   }),
 
   phone: (message = 'Please enter a valid phone number'): ValidationRule<string> => ({
-    validate: (value) => /^[\d\s\-\+\(\)]{10,}$/.test(value),
+    validate: (value) => /^[\d\s\-+()]{10,}$/.test(value),
     message,
   }),
 

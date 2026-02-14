@@ -1,12 +1,45 @@
 // ============================================================================
-// MESSAGE QUERIES - Single Source of Truth for Message Operations
+// MESSAGE QUERIES - Maps contact_submissions to Message interface with replies
 // ============================================================================
 
-import { supabase } from '../supabase/client';
+import { db } from '../insforge/client';
 import type { Message, MessageInput, MessageUpdate, MessageFilters } from '../types/db';
 import type { PaginatedResult, PaginationParams, QueryResult, ListResult } from '../utils/errors';
 import { MessageStatus } from '../types/enums';
 import { handleQueryError, handleSingleQueryError } from '../utils/errors';
+
+// ============================================================================
+// TYPE MAPPING HELPERS
+// ============================================================================
+
+interface ContactSubmissionRow {
+  id: string;
+  full_name: string;
+  email: string;
+  inquiry_type: string;
+  organization: string | null;
+  message: string;
+  status: 'new' | 'read' | 'replied' | 'archived';
+  created_at: string;
+  updated_at: string;
+}
+
+function mapContactToMessage(row: ContactSubmissionRow): Message {
+  return {
+    id: row.id,
+    sender_name: row.full_name,
+    sender_email: row.email,
+    sender_phone: null,
+    subject: row.inquiry_type,
+    message: row.message,
+    status: row.status === 'new' ? MessageStatus.UNREAD : row.status as MessageStatus,
+    admin_reply: null,
+    handled_by_admin_id: null,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    replied_at: null,
+  };
+}
 
 // ============================================================================
 // LIST QUERIES
@@ -17,19 +50,6 @@ export interface ListMessagesOptions {
   pagination?: PaginationParams;
 }
 
-/**
- * List messages with filtering, sorting, and pagination
- * @param options - Query options
- * @returns Paginated list of messages
- * 
- * @example
- * ```typescript
- * const { data, count, error } = await listMessages({
- *   filters: { status: 'unread' },
- *   pagination: { page: 1, perPage: 25 }
- * });
- * ```
- */
 export async function listMessages(
   options: ListMessagesOptions = {}
 ): Promise<PaginatedResult<Message> & { error: Error | null }> {
@@ -40,21 +60,19 @@ export async function listMessages(
   const sortOrder = pagination.sortOrder ?? 'desc';
   
   try {
-    let query = supabase
-      .from('messages')
+    let query = db
+      .from('contact_submissions')
       .select('*', { count: 'exact' });
     
-    // Apply filters
+    // Apply status filter
     if (filters.status) {
-      query = query.eq('status', filters.status);
+      // Map message status to contact_submissions status
+      const mappedStatus = filters.status === MessageStatus.UNREAD ? 'new' : filters.status;
+      query = query.eq('status', mappedStatus);
     }
     
     if (filters.sender_email) {
-      query = query.eq('sender_email', filters.sender_email);
-    }
-    
-    if (filters.handled_by_admin_id) {
-      query = query.eq('handled_by_admin_id', filters.handled_by_admin_id);
+      query = query.eq('email', filters.sender_email);
     }
     
     if (filters.date_from) {
@@ -69,17 +87,14 @@ export async function listMessages(
     if (filters.search) {
       const searchTerm = `%${filters.search}%`;
       query = query.or(
-        `sender_name.ilike.${searchTerm},` +
-        `sender_email.ilike.${searchTerm},` +
-        `subject.ilike.${searchTerm},` +
+        `full_name.ilike.${searchTerm},` +
+        `email.ilike.${searchTerm},` +
+        `inquiry_type.ilike.${searchTerm},` +
         `message.ilike.${searchTerm}`
       );
     }
     
-    // Apply sorting (unread first, then by date)
-    if (sortBy === 'status') {
-      query = query.order('status', { ascending: false });
-    }
+    // Apply sorting
     query = query.order('created_at', { ascending: sortOrder === 'asc' });
     
     // Apply pagination
@@ -91,8 +106,11 @@ export async function listMessages(
     
     if (error) throw error;
     
+    // Map to Message type
+    const mappedData = (data as ContactSubmissionRow[] || []).map(mapContactToMessage);
+    
     return {
-      data: (data as Message[]) || [],
+      data: mappedData,
       count: count || 0,
       page,
       perPage,
@@ -100,41 +118,40 @@ export async function listMessages(
       error: null,
     };
   } catch (error) {
+    console.error('[Messages] listMessages error:', error);
     return {
       data: [],
       count: 0,
-      page: pagination.page ?? 1,
-      perPage: pagination.perPage ?? 25,
+      page,
+      perPage,
       totalPages: 0,
       error: error instanceof Error ? error : new Error(String(error)),
     };
   }
 }
 
-/**
- * Get all messages (without pagination)
- * @param filters - Optional filters
- * @returns List of all matching messages
- */
 export async function getAllMessages(
   filters?: Omit<MessageFilters, 'search'>
 ): Promise<ListResult<Message>> {
   try {
-    let query = supabase.from('messages').select('*');
+    let query = db.from('contact_submissions').select('*');
     
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      const mappedStatus = filters.status === MessageStatus.UNREAD ? 'new' : filters.status;
+      query = query.eq('status', mappedStatus);
     }
     
     if (filters?.sender_email) {
-      query = query.eq('sender_email', filters.sender_email);
+      query = query.eq('email', filters.sender_email);
     }
     
     const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) throw error;
     
-    return { data: (data as Message[]) || [], count: data?.length || 0, error: null };
+    const mappedData = (data as ContactSubmissionRow[] || []).map(mapContactToMessage);
+    
+    return { data: mappedData, count: data?.length || 0, error: null };
   } catch (error) {
     return handleQueryError<Message[]>(error);
   }
@@ -144,24 +161,19 @@ export async function getAllMessages(
 // SINGLE RECORD QUERIES
 // ============================================================================
 
-/**
- * Get message by ID
- * @param id - Message ID
- * @returns Message or null
- */
 export async function getMessageById(
   id: string
 ): Promise<QueryResult<Message>> {
   try {
-    const { data, error } = await supabase
-      .from('messages')
+    const { data, error } = await db
+      .from('contact_submissions')
       .select('*')
       .eq('id', id)
       .single();
 
     if (error) throw error;
 
-    return { data: data as Message, error: null };
+    return { data: mapContactToMessage(data as ContactSubmissionRow), error: null };
   } catch (error) {
     return handleSingleQueryError<Message>(error);
   }
@@ -171,139 +183,100 @@ export async function getMessageById(
 // MUTATION QUERIES
 // ============================================================================
 
-/**
- * Create new message (contact form submission)
- * @param input - Message data
- * @returns Created message
- */
 export async function createMessage(
   input: MessageInput
 ): Promise<QueryResult<Message>> {
   try {
-    const { data, error } = await supabase
-      .from('messages')
-      .insert(input)
+    const { data, error } = await db
+      .from('contact_submissions')
+      .insert({
+        full_name: input.sender_name,
+        email: input.sender_email,
+        inquiry_type: input.subject || 'General Inquiry',
+        organization: null,
+        message: input.message,
+        status: 'new',
+      })
       .select()
       .single();
 
     if (error) throw error;
 
-    return { data: data as Message, error: null };
+    return { data: mapContactToMessage(data as ContactSubmissionRow), error: null };
   } catch (error) {
     return handleSingleQueryError<Message>(error);
   }
 }
 
-/**
- * Update message
- * @param id - Message ID
- * @param updates - Fields to update
- * @returns Updated message
- */
 export async function updateMessage(
   id: string,
   updates: MessageUpdate
 ): Promise<QueryResult<Message>> {
   try {
-    const { data, error } = await supabase
-      .from('messages')
-      .update(updates)
+    const dbUpdates: Partial<ContactSubmissionRow> = {};
+    
+    if (updates.status) {
+      // Map MessageStatus to contact_submissions status
+      dbUpdates.status = updates.status === MessageStatus.UNREAD ? 'new' : updates.status as ContactSubmissionRow['status'];
+    }
+    
+    const { data, error } = await db
+      .from('contact_submissions')
+      .update(dbUpdates)
       .eq('id', id)
       .select()
       .single();
 
     if (error) throw error;
 
-    return { data: data as Message, error: null };
+    return { data: mapContactToMessage(data as ContactSubmissionRow), error: null };
   } catch (error) {
     return handleSingleQueryError<Message>(error);
   }
 }
 
-/**
- * Update message status
- * @param id - Message ID
- * @param status - New status
- * @param handledByAdminId - Optional admin ID
- * @returns Updated message
- */
 export async function updateMessageStatus(
   id: string,
   status: MessageStatus,
-  handledByAdminId?: string
+  _handledByAdminId?: string
 ): Promise<QueryResult<Message>> {
-  const updates: MessageUpdate = { status };
-  
-  if (handledByAdminId !== undefined) {
-    updates.handled_by_admin_id = handledByAdminId;
-  }
-  
-  if (status === MessageStatus.REPLIED) {
-    updates.replied_at = new Date().toISOString();
-  }
-  
-  return updateMessage(id, updates);
+  const mappedStatus = status === MessageStatus.UNREAD ? 'new' : status as ContactSubmissionRow['status'];
+  return updateMessage(id, { status: mappedStatus as MessageStatus });
 }
 
-/**
- * Mark message as read
- * @param id - Message ID
- * @param adminId - Admin who read it
- * @returns Updated message
- */
 export async function markMessageAsRead(
   id: string,
-  adminId?: string
+  _adminId?: string
 ): Promise<QueryResult<Message>> {
-  return updateMessageStatus(id, MessageStatus.READ, adminId);
+  return updateMessageStatus(id, MessageStatus.READ);
 }
 
-/**
- * Mark message as replied
- * @param id - Message ID
- * @param adminId - Admin who replied
- * @returns Updated message
- */
 export async function markMessageAsReplied(
   id: string,
-  adminId?: string
+  _adminId?: string
 ): Promise<QueryResult<Message>> {
-  return updateMessageStatus(id, MessageStatus.REPLIED, adminId);
+  return updateMessageStatus(id, MessageStatus.REPLIED);
 }
 
-/**
- * Archive message
- * @param id - Message ID
- * @returns Updated message
- */
 export async function archiveMessage(
   id: string
 ): Promise<QueryResult<Message>> {
   return updateMessageStatus(id, MessageStatus.ARCHIVED);
 }
 
-/**
- * Mark message as spam
- * @param id - Message ID
- * @returns Updated message
- */
 export async function markMessageAsSpam(
   id: string
 ): Promise<QueryResult<Message>> {
-  return updateMessageStatus(id, MessageStatus.SPAM);
+  // For contact_submissions, we'll just archive spam
+  return updateMessageStatus(id, MessageStatus.ARCHIVED);
 }
 
-/**
- * Delete message
- * @param id - Message ID
- * @returns True if deleted
- */
 export async function deleteMessage(
   id: string
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    const { error } = await supabase
-      .from('messages')
+    const { error } = await db
+      .from('contact_submissions')
       .delete()
       .eq('id', id);
 
@@ -322,26 +295,16 @@ export async function deleteMessage(
 // BULK OPERATIONS
 // ============================================================================
 
-/**
- * Bulk update message status
- * @param ids - Array of message IDs
- * @param status - New status
- * @returns Number of updated records
- */
 export async function bulkUpdateMessageStatus(
   ids: string[],
   status: MessageStatus
 ): Promise<{ count: number; error: Error | null }> {
   try {
-    const updates: MessageUpdate = { status };
+    const mappedStatus = status === MessageStatus.UNREAD ? 'new' : status as ContactSubmissionRow['status'];
     
-    if (status === MessageStatus.REPLIED) {
-      updates.replied_at = new Date().toISOString();
-    }
-    
-    const { data, error } = await supabase
-      .from('messages')
-      .update(updates)
+    const { data, error } = await db
+      .from('contact_submissions')
+      .update({ status: mappedStatus })
       .in('id', ids)
       .select('id');
 
@@ -360,28 +323,25 @@ export async function bulkUpdateMessageStatus(
 // ANALYTICS QUERIES
 // ============================================================================
 
-/**
- * Get message status counts for dashboard
- * @returns Counts by status
- */
 export async function getMessageStatusCounts(): Promise<
   QueryResult<Array<{ status: string; count: number }>>
 > {
   try {
-    const { data, error } = await supabase
-      .from('messages')
+    const { data, error } = await db
+      .from('contact_submissions')
       .select('status');
 
     if (error) throw error;
 
     // Count by status
     const counts: Record<string, number> = {};
-    data?.forEach((item) => {
+    data?.forEach((item: { status: string }) => {
       counts[item.status] = (counts[item.status] || 0) + 1;
     });
 
+    // Map contact_submissions statuses to MessageStatus
     const result = Object.entries(counts).map(([status, count]) => ({
-      status,
+      status: status === 'new' ? MessageStatus.UNREAD : status,
       count,
     }));
 
@@ -391,16 +351,12 @@ export async function getMessageStatusCounts(): Promise<
   }
 }
 
-/**
- * Get unread messages count
- * @returns Number of unread messages
- */
 export async function getUnreadMessagesCount(): Promise<number> {
   try {
-    const { count, error } = await supabase
-      .from('messages')
+    const { count, error } = await db
+      .from('contact_submissions')
       .select('*', { count: 'exact', head: true })
-      .eq('status', MessageStatus.UNREAD);
+      .eq('status', 'new');
 
     if (error) throw error;
 
@@ -410,58 +366,46 @@ export async function getUnreadMessagesCount(): Promise<number> {
   }
 }
 
-/**
- * Get recent messages
- * @param limit - Number of records
- * @returns Recent messages
- */
 export async function getRecentMessages(
   limit: number = 10
 ): Promise<ListResult<Message>> {
   try {
-    const { data, error } = await supabase
-      .from('messages')
+    const { data, error } = await db
+      .from('contact_submissions')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
 
-    return { data: (data as Message[]) || [], count: data?.length || 0, error: null };
+    const mappedData = (data as ContactSubmissionRow[] || []).map(mapContactToMessage);
+
+    return { data: mappedData, count: data?.length || 0, error: null };
   } catch (error) {
     return handleQueryError<Message[]>(error);
   }
 }
 
-/**
- * Get messages by sender email
- * @param email - Sender email
- * @returns Messages from this sender
- */
 export async function getMessagesBySender(
   email: string
 ): Promise<ListResult<Message>> {
   try {
-    const { data, error } = await supabase
-      .from('messages')
+    const { data, error } = await db
+      .from('contact_submissions')
       .select('*')
-      .eq('sender_email', email)
+      .eq('email', email)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    return { data: (data as Message[]) || [], count: data?.length || 0, error: null };
+    const mappedData = (data as ContactSubmissionRow[] || []).map(mapContactToMessage);
+
+    return { data: mappedData, count: data?.length || 0, error: null };
   } catch (error) {
     return handleQueryError<Message[]>(error);
   }
 }
 
-/**
- * Get thread/conversation by sender email
- * Groups messages from same sender
- * @param email - Sender email
- * @returns Thread of messages
- */
 export async function getMessageThread(
   email: string
 ): Promise<{
@@ -471,15 +415,15 @@ export async function getMessageThread(
   error: Error | null;
 }> {
   try {
-    const { data, error } = await supabase
-      .from('messages')
+    const { data, error } = await db
+      .from('contact_submissions')
       .select('*')
-      .eq('sender_email', email)
+      .eq('email', email)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
 
-    const messages = (data as Message[]) || [];
+    const messages = (data as ContactSubmissionRow[] || []).map(mapContactToMessage);
     const firstMessage = messages[0];
 
     return {
@@ -497,6 +441,93 @@ export async function getMessageThread(
       sender: { name: '', email, phone: null },
       messages: [],
       count: 0,
+      error: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
+}
+
+// ============================================================================
+// REPLY OPERATIONS
+// ============================================================================
+
+export interface Reply {
+  id: string;
+  submission_id: string;
+  admin_id: string | null;
+  admin_name: string | null;
+  admin_email: string | null;
+  reply_text: string;
+  created_at: string;
+}
+
+/**
+ * Add a reply to a contact submission
+ * Saves reply to database and updates submission status
+ */
+export async function addMessageReply(
+  submissionId: string,
+  replyText: string,
+  _adminId?: string
+): Promise<{ success: boolean; data?: Reply; error: Error | null }> {
+  try {
+    // Insert reply
+    const { data: replyData, error: replyError } = await db
+      .from('contact_replies')
+      .insert({
+        submission_id: submissionId,
+        reply_text: replyText,
+      })
+      .select('id, submission_id, admin_id, reply_text, created_at')
+      .single();
+
+    if (replyError) throw replyError;
+
+    // Update submission status
+    const { error: updateError } = await db
+      .from('contact_submissions')
+      .update({
+        status: 'replied',
+        admin_reply: replyText,
+        replied_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', submissionId);
+
+    if (updateError) throw updateError;
+
+    return { 
+      success: true, 
+      data: replyData as Reply,
+      error: null 
+    };
+  } catch (error) {
+    console.error('[Messages] addMessageReply error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
+}
+
+/**
+ * Get all replies for a submission
+ */
+export async function getMessageReplies(
+  submissionId: string
+): Promise<{ data: Reply[]; error: Error | null }> {
+  try {
+    const { data, error } = await db
+      .from('contact_replies')
+      .select('*')
+      .eq('submission_id', submissionId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    return { data: (data as Reply[]) || [], error: null };
+  } catch (error) {
+    return {
+      data: [],
       error: error instanceof Error ? error : new Error(String(error)),
     };
   }
@@ -524,4 +555,6 @@ export default {
   getRecentMessages,
   getMessagesBySender,
   getMessageThread,
+  addMessageReply,
+  getMessageReplies,
 };

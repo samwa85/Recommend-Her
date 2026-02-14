@@ -13,7 +13,8 @@ import {
 } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button-variants"
 
 function Calendar({
   className,
@@ -188,9 +189,10 @@ function CalendarDayButton({
   const defaultClassNames = getDefaultClassNames()
 
   const ref = React.useRef<HTMLButtonElement>(null)
+  const focused = modifiers['focused']
   React.useEffect(() => {
-    if (modifiers['focused']) ref.current?.focus()
-  }, [modifiers['focused']])
+    if (focused) ref.current?.focus()
+  }, [focused])
 
   return (
     <Button

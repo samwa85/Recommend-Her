@@ -148,6 +148,7 @@ export const REQUEST_PRIORITY_LABELS: Record<string, string> = {
 };
 
 export const MESSAGE_STATUS_LABELS: Record<string, string> = {
+  new: 'New',
   unread: 'Unread',
   read: 'Read',
   replied: 'Replied',
@@ -193,6 +194,7 @@ export const StatusVariants: Record<string, StatusVariant> = {
   closed: 'outline',
   
   // Message
+  new: 'secondary',
   unread: 'secondary',
   read: 'outline',
   replied: 'default',

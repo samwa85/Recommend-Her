@@ -5,16 +5,16 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-export type Validator<T> = (value: T, allValues?: Record<string, any>) => string | undefined;
+export type Validator<T> = (value: T, allValues?: Record<string, unknown>) => string | undefined;
 
-export interface FieldConfig<T = any> {
+export interface FieldConfig<T = unknown> {
   initialValue: T;
   validators?: Validator<T>[];
   required?: boolean;
   requiredMessage?: string;
 }
 
-export interface FieldState<T = any> {
+export interface FieldState<T = unknown> {
   value: T;
   error?: string;
   touched: boolean;
@@ -28,7 +28,7 @@ export interface UseFormValidationOptions {
   validateOnBlur?: boolean;
 }
 
-export function useFormValidation<T extends Record<string, any>>(
+export function useFormValidation<T extends Record<string, unknown>>(
   fields: { [K in keyof T]: FieldConfig<T[K]> },
   options: UseFormValidationOptions = {}
 ) {
@@ -42,7 +42,7 @@ export function useFormValidation<T extends Record<string, any>>(
   const [fieldStates, setFieldStates] = useState<{
     [K in keyof T]: FieldState<T[K]>;
   }>(() => {
-    const initial: any = {};
+    const initial: Record<string, FieldState<unknown>> = {};
     for (const key of Object.keys(fields)) {
       initial[key] = {
         value: fields[key as keyof T].initialValue,
@@ -51,7 +51,7 @@ export function useFormValidation<T extends Record<string, any>>(
         validating: false,
       };
     }
-    return initial;
+    return initial as { [K in keyof T]: FieldState<T[K]> };
   });
 
   // Track debounce timers
@@ -60,6 +60,7 @@ export function useFormValidation<T extends Record<string, any>>(
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       Object.values(debounceTimers.current).forEach(clearTimeout);
     };
   }, []);
@@ -68,7 +69,7 @@ export function useFormValidation<T extends Record<string, any>>(
   const validateField = useCallback(<K extends keyof T>(
     fieldName: K,
     value: T[K],
-    allValues: Record<string, any>
+    allValues: Record<string, unknown>
   ): string | undefined => {
     const config = fields[fieldName];
     
@@ -106,7 +107,7 @@ export function useFormValidation<T extends Record<string, any>>(
       };
 
       // Get all current values for cross-field validation
-      const allValues: Record<string, any> = {};
+      const allValues: Record<string, unknown> = {};
       for (const key of Object.keys(newStates)) {
         allValues[key] = newStates[key as keyof T].value;
       }
@@ -144,7 +145,7 @@ export function useFormValidation<T extends Record<string, any>>(
       const field = prev[fieldName];
       
       if (validateOnBlur && !field.touched) {
-        const allValues: Record<string, any> = {};
+        const allValues: Record<string, unknown> = {};
         for (const key of Object.keys(prev)) {
           allValues[key] = prev[key as keyof T].value;
         }
@@ -173,7 +174,7 @@ export function useFormValidation<T extends Record<string, any>>(
 
   // Validate all fields
   const validateAll = useCallback((): boolean => {
-    const allValues: Record<string, any> = {};
+    const allValues: Record<string, unknown> = {};
     for (const key of Object.keys(fieldStates)) {
       allValues[key] = fieldStates[key as keyof T].value;
     }
@@ -192,7 +193,7 @@ export function useFormValidation<T extends Record<string, any>>(
 
     // Update all field states with errors
     setFieldStates(prev => {
-      const updated: any = { ...prev };
+      const updated: Record<string, FieldState<unknown>> = { ...prev };
       for (const key of Object.keys(updated)) {
         updated[key] = {
           ...updated[key],
@@ -200,7 +201,7 @@ export function useFormValidation<T extends Record<string, any>>(
           error: newErrors[key as keyof T],
         };
       }
-      return updated;
+      return updated as { [K in keyof T]: FieldState<T[K]> };
     });
 
     return isValid;
@@ -208,7 +209,7 @@ export function useFormValidation<T extends Record<string, any>>(
 
   // Reset form
   const reset = useCallback(() => {
-    const initial: any = {};
+    const initial: Record<string, FieldState<unknown>> = {};
     for (const key of Object.keys(fields)) {
       initial[key] = {
         value: fields[key as keyof T].initialValue,
@@ -218,16 +219,16 @@ export function useFormValidation<T extends Record<string, any>>(
         error: undefined,
       };
     }
-    setFieldStates(initial);
+    setFieldStates(initial as { [K in keyof T]: FieldState<T[K]> });
   }, [fields]);
 
   // Get form values
   const getValues = useCallback((): T => {
-    const values: any = {};
+    const values: Record<string, unknown> = {};
     for (const key of Object.keys(fieldStates)) {
       values[key] = fieldStates[key as keyof T].value;
     }
-    return values;
+    return values as T;
   }, [fieldStates]);
 
   // Check if form is valid
@@ -256,7 +257,7 @@ export function useFormValidation<T extends Record<string, any>>(
 // ============================================================================
 
 export const validators = {
-  required: (message = 'This field is required') => (value: any): string | undefined => {
+  required: (message = 'This field is required') => (value: unknown): string | undefined => {
     if (value === undefined || value === null || value === '') {
       return message;
     }
@@ -317,7 +318,7 @@ export const validators = {
   },
 
   match: (fieldName: string, message = 'Fields do not match') => 
-    (value: any, allValues?: Record<string, any>): string | undefined => {
+    (value: unknown, allValues?: Record<string, unknown>): string | undefined => {
       if (!allValues) return undefined;
       if (value !== allValues[fieldName]) {
         return message;
@@ -325,7 +326,7 @@ export const validators = {
       return undefined;
     },
 
-  oneOf: (allowedValues: any[], message?: string) => (value: any): string | undefined => {
+  oneOf: (allowedValues: unknown[], message?: string) => (value: unknown): string | undefined => {
     if (!allowedValues.includes(value)) {
       return message || `Must be one of: ${allowedValues.join(', ')}`;
     }

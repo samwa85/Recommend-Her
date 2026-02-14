@@ -4,13 +4,14 @@
 
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { StatusVariants, getStatusLabel } from '@/lib/types/enums';
+import { StatusVariants } from '@/lib/types/enums';
+import { getStatusLabel } from '@/admin/lib/status-helpers';
 
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
 
-type StatusType = 'talent' | 'sponsor' | 'request' | 'message' | 'file';
+type StatusType = 'talent' | 'sponsor' | 'request' | 'message' | 'file' | 'user';
 
 interface StatusBadgeProps {
   status: string;
@@ -33,7 +34,7 @@ const VARIANT_STYLES: Record<string, string> = {
 // MAIN COMPONENT
 // ============================================================================
 
-export function StatusBadge({ status, type: _type, className }: StatusBadgeProps) {
+export function StatusBadge({ status, className }: StatusBadgeProps) {
   const label = getStatusLabel(status);
   const variant = StatusVariants[status] || 'outline';
   const styleClass = VARIANT_STYLES[variant] || VARIANT_STYLES['outline'];
@@ -52,25 +53,6 @@ export function StatusBadge({ status, type: _type, className }: StatusBadgeProps
   );
 }
 
-// ============================================================================
-// EXPORT HELPER FUNCTIONS
-// ============================================================================
 
-export { getStatusLabel };
-
-export function getStatusColor(status: string): string {
-  const variant = StatusVariants[status];
-  switch (variant) {
-    case 'default':
-      return 'green';
-    case 'destructive':
-      return 'red';
-    case 'secondary':
-      return 'blue';
-    case 'outline':
-    default:
-      return 'gray';
-  }
-}
 
 export default StatusBadge;

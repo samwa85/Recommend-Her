@@ -1,0 +1,92 @@
+- main [ref=e4]:
+  - generic [ref=e9]:
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - img [ref=e14]
+        - generic [ref=e16]:
+          - heading "Recommend Her" [level=1] [ref=e17]
+          - paragraph [ref=e18]: Admin Dashboard
+      - navigation [ref=e19]:
+        - link "Overview" [ref=e20] [cursor=pointer]:
+          - /url: /admin
+          - img [ref=e21]
+          - text: Overview
+        - link "Talent" [ref=e26] [cursor=pointer]:
+          - /url: /admin/talent
+          - img [ref=e27]
+          - text: Talent
+        - link "Sponsors" [ref=e32] [cursor=pointer]:
+          - /url: /admin/sponsors
+          - img [ref=e33]
+          - text: Sponsors
+        - link "Requests" [ref=e37] [cursor=pointer]:
+          - /url: /admin/requests
+          - img [ref=e38]
+          - text: Requests
+        - link "Messages" [ref=e40] [cursor=pointer]:
+          - /url: /admin/messages
+          - img [ref=e41]
+          - text: Messages
+        - link "Analytics" [ref=e44] [cursor=pointer]:
+          - /url: /admin/analytics
+          - img [ref=e45]
+          - text: Analytics
+      - generic [ref=e47]:
+        - button [ref=e49] [cursor=pointer]:
+          - img
+        - button [ref=e50] [cursor=pointer]:
+          - img
+        - button [ref=e51] [cursor=pointer]:
+          - img
+        - button "AD Admin" [ref=e52] [cursor=pointer]:
+          - generic [ref=e54]: AD
+          - generic [ref=e55]: Admin
+          - img
+    - generic [ref=e56]:
+      - complementary [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - generic [ref=e60]:
+              - paragraph [ref=e61]: Talent
+              - paragraph [ref=e63]: "0"
+            - generic [ref=e64]:
+              - paragraph [ref=e65]: Sponsors
+              - paragraph [ref=e67]: "0"
+          - generic [ref=e68]:
+            - paragraph [ref=e69]: Quick Links
+            - button "Pending Reviews" [ref=e70] [cursor=pointer]:
+              - img
+              - text: Pending Reviews
+            - button "Unread Messages" [ref=e71] [cursor=pointer]:
+              - img
+              - text: Unread Messages
+      - main [ref=e72]:
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - generic [ref=e75]:
+              - heading "Talent Profiles" [level=1] [ref=e76]
+              - paragraph [ref=e77]: 0 total talents • 0 pending review
+            - generic [ref=e79]:
+              - button "Refresh" [ref=e80] [cursor=pointer]:
+                - img
+                - text: Refresh
+              - button "Add Talent" [ref=e81] [cursor=pointer]:
+                - img
+                - text: Add Talent
+          - generic [ref=e82]:
+            - text: "[object Object]"
+            - button "Retry" [ref=e83] [cursor=pointer]
+          - generic [ref=e85]:
+            - generic [ref=e86]:
+              - img [ref=e87]
+              - textbox "Search by name, email, headline..." [ref=e90]
+            - button "Filters" [ref=e91] [cursor=pointer]:
+              - img
+              - text: Filters
+            - combobox [ref=e92] [cursor=pointer]:
+              - generic: 25 / page
+              - img
+          - generic [ref=e93]:
+            - img [ref=e94]
+            - heading "No talent found" [level=3] [ref=e99]
+            - paragraph [ref=e100]: No talent profiles have been submitted yet

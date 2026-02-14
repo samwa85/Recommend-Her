@@ -137,7 +137,7 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Calendar className="w-5 h-5 text-muted-foreground" />
-          <Select value={dateRange} onValueChange={(v) => setDateRange(v as any)}>
+          <Select value={dateRange} onValueChange={(v) => setDateRange(v as '7' | '30' | '90')}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select range" />
             </SelectTrigger>

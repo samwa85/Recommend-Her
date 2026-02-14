@@ -17,8 +17,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  Briefcase,
-  GraduationCap,
   Calendar,
   Filter,
   ArrowUpDown,
@@ -30,8 +28,6 @@ import {
   Linkedin,
   Globe,
   Archive,
-  UserCheck,
-  Clock,
   ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -150,8 +146,6 @@ export default function TalentPage() {
   // STATE
   // ============================================================================
   
-  // View state
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [selectedTalentId, setSelectedTalentId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   
@@ -195,8 +189,29 @@ export default function TalentPage() {
   const [bulkAction, setBulkAction] = useState<'approve' | 'reject' | 'archive' | 'delete'>('approve');
 
   // ============================================================================
-  // DATA FETCHING
+  // DATA FETCHING - Memoized to prevent infinite loops
   // ============================================================================
+  
+  // Memoize filters to prevent unnecessary re-fetches
+  const memoizedFilters = useMemo(() => ({
+    status: filters.status || undefined,
+    search: filters.search || undefined,
+    industry: filters.industry || undefined,
+    role_category: filters.role_category || undefined,
+    years_of_experience: filters.years_of_experience || undefined,
+    has_cv: (filters.has_cv as 'yes' | 'no' | '' | undefined) || undefined,
+    date_from: filters.date_from || undefined,
+    date_to: filters.date_to || undefined,
+  }), [filters.status, filters.search, filters.industry, filters.role_category, 
+      filters.years_of_experience, filters.has_cv, filters.date_from, filters.date_to]);
+  
+  // Memoize pagination to prevent unnecessary re-fetches
+  const memoizedPagination = useMemo(() => ({
+    page: pagination.page,
+    perPage: pagination.perPage,
+    sortBy: sortConfig.key,
+    sortOrder: sortConfig.direction,
+  }), [pagination.page, pagination.perPage, sortConfig.key, sortConfig.direction]);
   
   const { 
     data, 
@@ -204,22 +219,8 @@ export default function TalentPage() {
     error, 
     refresh 
   } = useTalentList({
-    filters: {
-      status: filters.status || undefined,
-      search: filters.search || undefined,
-      industry: filters.industry || undefined,
-      role_category: filters.role_category || undefined,
-      years_of_experience: filters.years_of_experience || undefined,
-      has_cv: (filters.has_cv as 'yes' | 'no' | '' | undefined) || undefined,
-      date_from: filters.date_from || undefined,
-      date_to: filters.date_to || undefined,
-    },
-    pagination: {
-      page: pagination.page,
-      perPage: pagination.perPage,
-      sortBy: sortConfig.key,
-      sortOrder: sortConfig.direction,
-    },
+    filters: memoizedFilters,
+    pagination: memoizedPagination,
     autoRefresh: false,
   });
 
@@ -310,7 +311,8 @@ export default function TalentPage() {
     
     toast.promise(
       async () => {
-        const url = await getTalentCVUrl(talent.id);
+        const { url, error } = await getTalentCVUrl(talent.id);
+        if (error) throw error;
         if (url) {
           window.open(url, '_blank');
           return 'CV opened';
@@ -325,7 +327,7 @@ export default function TalentPage() {
     );
   }, []);
 
-  const handleStatusChange = useCallback(async (_talent: TalentProfile, status: TalentStatus) => {
+  const handleStatusChange = useCallback(async (status: TalentStatus) => {
     toast.promise(
       async () => {
         const result = await updateStatus(status as 'pending' | 'approved' | 'rejected' | 'archived');
@@ -372,9 +374,7 @@ export default function TalentPage() {
     toast.promise(
       async () => {
         // In real implementation, you'd batch these
-        for (const id of ids) {
-          // Perform bulk action
-        }
+        // Process ids: ids.forEach(id => { ... })
         setSelectedRows(new Set());
         setSelectAll(false);
         setBulkActionDialogOpen(false);
@@ -387,7 +387,7 @@ export default function TalentPage() {
         error: 'Some updates failed',
       }
     );
-  }, [selectedRows, bulkAction, refresh]);
+  }, [selectedRows, refresh]);
 
   // ============================================================================
   // RENDER HELPERS
@@ -510,60 +510,60 @@ export default function TalentPage() {
         {showFilters && (
           <div className="p-4 bg-muted/50 rounded-lg space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <Select value={filters.status} onValueChange={(v) => handleFilterChange('status', v)}>
+              <Select value={filters.status || 'all'} onValueChange={(v) => handleFilterChange('status', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   {Object.entries(TALENT_STATUS_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={filters.industry} onValueChange={(v) => handleFilterChange('industry', v)}>
+              <Select value={filters.industry || 'all'} onValueChange={(v) => handleFilterChange('industry', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Industry" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Industries</SelectItem>
+                  <SelectItem value="all">All Industries</SelectItem>
                   {INDUSTRIES.map(ind => (
                     <SelectItem key={ind} value={ind}>{ind}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={filters.role_category} onValueChange={(v) => handleFilterChange('role_category', v)}>
+              <Select value={filters.role_category || 'all'} onValueChange={(v) => handleFilterChange('role_category', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Role Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Roles</SelectItem>
+                  <SelectItem value="all">All Roles</SelectItem>
                   {ROLE_CATEGORIES.map(role => (
                     <SelectItem key={role} value={role}>{role}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={filters.years_of_experience} onValueChange={(v) => handleFilterChange('years_of_experience', v)}>
+              <Select value={filters.years_of_experience || 'all'} onValueChange={(v) => handleFilterChange('years_of_experience', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Experience" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Experience</SelectItem>
+                  <SelectItem value="all">All Experience</SelectItem>
                   {EXPERIENCE_LEVELS.map(exp => (
                     <SelectItem key={exp} value={exp}>{exp}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={filters.has_cv} onValueChange={(v) => handleFilterChange('has_cv', v)}>
+              <Select value={filters.has_cv || 'all'} onValueChange={(v) => handleFilterChange('has_cv', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="CV Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="yes">Has CV</SelectItem>
                   <SelectItem value="no">No CV</SelectItem>
                 </SelectContent>
@@ -601,7 +601,7 @@ export default function TalentPage() {
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             {Object.entries(filters)
-              .filter(([_, value]) => value)
+              .filter(([, value]) => value)
               .map(([key, value]) => (
                 <Badge
                   key={key}
@@ -814,21 +814,21 @@ export default function TalentPage() {
                           <DropdownMenuSeparator />
                           
                           {talent.status !== 'approved' && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(talent, TalentStatus.APPROVED)}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(TalentStatus.APPROVED)}>
                               <CheckCircle className="w-4 h-4 mr-2" />
                               Approve
                             </DropdownMenuItem>
                           )}
                           
                           {talent.status !== 'rejected' && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(talent, TalentStatus.REJECTED)}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(TalentStatus.REJECTED)}>
                               <XCircle className="w-4 h-4 mr-2" />
                               Reject
                             </DropdownMenuItem>
                           )}
                           
                           {talent.status !== 'archived' && (
-                            <DropdownMenuItem onClick={() => handleStatusChange(talent, TalentStatus.ARCHIVED)}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(TalentStatus.ARCHIVED)}>
                               <Archive className="w-4 h-4 mr-2" />
                               Archive
                             </DropdownMenuItem>
@@ -919,7 +919,7 @@ export default function TalentPage() {
                   {selectedTalent.status !== 'approved' && (
                     <Button
                       size="sm"
-                      onClick={() => handleStatusChange(selectedTalent, TalentStatus.APPROVED)}
+                      onClick={() => handleStatusChange(TalentStatus.APPROVED)}
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Approve

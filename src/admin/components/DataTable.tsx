@@ -261,7 +261,7 @@ export function DataTable<T>({
                     >
                       {column.render
                         ? column.render(row)
-                        : (row as any)[column.key]}
+                        : (row as Record<string, React.ReactNode>)[column.key]}
                     </TableCell>
                   ))}
                   {actions && (

@@ -97,7 +97,7 @@ const PIE_COLORS = [COLORS.primary, COLORS.secondary, COLORS.success, COLORS.war
 const NavTab = ({ value, icon: Icon, label, badge }: { value: string, icon: React.ElementType, label: string, badge?: number }) => (
   <TabsTrigger 
     value={value} 
-    className="gap-2 px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 data-[state=active]:border-[var(--primary)] border-transparent transition-all"
+    className="gap-2 px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 data-[state=active]:border-[hsl(var(--primary))] border-transparent transition-all"
   >
     <Icon size={18} />
     <span className="font-semibold">{label}</span>
@@ -333,7 +333,7 @@ const AdminDashboard = () => {
           console.log('  Sample talent:', { 
             id: firstTalent.id, 
             status: firstTalent.status,
-            profile: (firstTalent as any).profiles 
+            profile: (firstTalent as { profiles?: { full_name: string; email: string } }).profiles 
           });
           // Count by status
           const statusCounts = data.reduce((acc: Record<string, number>, t: TalentProfile) => {
@@ -378,8 +378,11 @@ const AdminDashboard = () => {
         .map(r => (r as PromiseRejectedResult).reason);
 
       const supabaseErrors = [allTalentResult, allSponsorsResult, auditLogsResult, contactResult]
-        .filter((r: any) => r.status === 'fulfilled' && r.value && r.value.error)
-        .map((r: any) => r.value.error.message);
+        .filter((r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' && r.value && typeof r.value === 'object' && 'error' in r.value && r.value.error)
+        .map((r: PromiseSettledResult<unknown>) => {
+          const fulfilled = r as PromiseFulfilledResult<{ error?: { message?: string } }>;
+          return fulfilled.value.error?.message;
+        }).filter((msg): msg is string => !!msg);
       
       const allErrors = [...promiseRejections, ...supabaseErrors];
       
@@ -661,17 +664,17 @@ const AdminDashboard = () => {
   if (isLoading && !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin" size={32} style={{ color: 'var(--primary)' }} />
+        <Loader2 className="animate-spin" size={32} style={{ color: 'hsl(var(--primary))' }} />
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--background)' }}>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'hsl(var(--background))' }}>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'var(--primary)' }}>
+            <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--primary))' }}>
               <Shield className="text-white" size={32} />
             </div>
             <CardTitle className="font-serif text-2xl">Admin Login</CardTitle>
@@ -693,7 +696,7 @@ const AdminDashboard = () => {
                 onChange={(e) => setDevPassword(e.target.value)}
                 className="h-12"
               />
-              <Button type="submit" className="w-full h-12" style={{ backgroundColor: 'var(--primary)' }}>
+              <Button type="submit" className="w-full h-12" style={{ backgroundColor: 'hsl(var(--primary))' }}>
                 Login
               </Button>
             </form>
@@ -708,21 +711,21 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen pt-24 sm:pt-[112px]" style={{ backgroundColor: 'var(--background)' }}>
+    <div className="min-h-screen pt-24 sm:pt-[112px]" style={{ backgroundColor: 'hsl(var(--background))' }}>
       {/* Unified Sticky Header */}
       <div className="sticky top-24 sm:top-[112px] z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
           {/* Row 1: Title and Actions */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ backgroundColor: 'var(--primary)' }}>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ backgroundColor: 'hsl(var(--primary))' }}>
                 <LayoutDashboard className="text-white" size={24} />
               </div>
               <div>
-                <h1 className="font-serif text-2xl font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
+                <h1 className="font-serif text-2xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>
                   Admin Dashboard
                 </h1>
-                <p className="text-xs uppercase tracking-wider font-semibold opacity-60" style={{ color: 'var(--muted-foreground)' }}>
+                <p className="text-xs uppercase tracking-wider font-semibold opacity-60" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   RecommendHer Management
                 </p>
               </div>
@@ -800,7 +803,7 @@ const AdminDashboard = () => {
                 icon={Clock} 
                 label="Pending Reviews" 
                 value={metrics?.pending_talent_reviews || 0}
-                trend={metrics && metrics.pending_talent_reviews > 5 ? 'up' : 'neutral'}
+                trend={metrics && (metrics.pending_talent_reviews ?? 0) > 5 ? 'up' : 'neutral'}
                 color="orange"
                 onClick={() => {
                   setStatListingType('pending_reviews');
@@ -933,10 +936,10 @@ const AdminDashboard = () => {
                         <div 
                           key={talent.id} 
                           className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50 transition-colors"
-                          style={{ borderColor: 'var(--border)' }}
+                          style={{ borderColor: 'hsl(var(--border))' }}
                         >
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--primary)' }}>
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--primary))' }}>
                               <span className="text-white font-medium">
                                 {talent.full_name.charAt(0).toUpperCase()}
                               </span>
@@ -959,8 +962,8 @@ const AdminDashboard = () => {
                       ))}
                       {pendingTalent.length === 0 && (
                         <div className="text-center py-12">
-                          <CheckCircle className="mx-auto mb-4" size={48} style={{ color: 'var(--muted-foreground)' }} />
-                          <p style={{ color: 'var(--muted-foreground)' }}>No pending reviews</p>
+                          <CheckCircle className="mx-auto mb-4" size={48} style={{ color: 'hsl(var(--muted-foreground))' }} />
+                          <p style={{ color: 'hsl(var(--muted-foreground))' }}>No pending reviews</p>
                         </div>
                       )}
                     </div>
@@ -1316,12 +1319,12 @@ const AdminDashboard = () => {
                       <div 
                         key={sponsor.id}
                         className="p-4 rounded-lg border hover:shadow-md transition-shadow"
-                        style={{ borderColor: 'var(--border)' }}
+                        style={{ borderColor: 'hsl(var(--border))' }}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-500 text-white font-bold text-lg">
-                              {sponsor.full_name.charAt(0).toUpperCase()}
+                              {(sponsor.full_name ?? '').charAt(0).toUpperCase()}
                             </div>
                             <div>
                               <p className="font-semibold">{sponsor.full_name}</p>
@@ -1383,7 +1386,7 @@ const AdminDashboard = () => {
                         <div 
                           key={sponsor.id}
                           className="flex items-center justify-between p-3 rounded-lg border"
-                          style={{ borderColor: 'var(--border)' }}
+                          style={{ borderColor: 'hsl(var(--border))' }}
                         >
                           <div>
                             <p className="font-medium">{sponsor.profiles?.full_name}</p>
@@ -1414,7 +1417,7 @@ const AdminDashboard = () => {
                     <div 
                       key={req.id}
                       className="p-4 rounded-lg border hover:shadow-md transition-shadow"
-                      style={{ borderColor: 'var(--border)' }}
+                      style={{ borderColor: 'hsl(var(--border))' }}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
@@ -1479,12 +1482,12 @@ const AdminDashboard = () => {
                       <div 
                         key={submission.id}
                         className="p-4 rounded-lg border hover:shadow-md transition-shadow"
-                        style={{ borderColor: 'var(--border)' }}
+                        style={{ borderColor: 'hsl(var(--border))' }}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-green-500 to-teal-400 text-white font-bold">
-                              {submission.full_name.charAt(0).toUpperCase()}
+                              {(submission.full_name ?? '').charAt(0).toUpperCase()}
                             </div>
                             <div>
                               <p className="font-semibold">{submission.full_name}</p>
@@ -1747,7 +1750,7 @@ const AdminDashboard = () => {
             <Button variant="outline" onClick={() => setSelectedTalent(null)}>
               Cancel
             </Button>
-            <Button onClick={handleTalentReview} style={{ backgroundColor: 'var(--primary)' }}>
+            <Button onClick={handleTalentReview} style={{ backgroundColor: 'hsl(var(--primary))' }}>
               Submit Review
             </Button>
           </DialogFooter>
@@ -1789,7 +1792,7 @@ const AdminDashboard = () => {
                   </h4>
                   <div className="space-y-2 text-sm">
                     <p><span className="text-gray-500">Email:</span> {selectedProfileDetail.profiles?.email}</p>
-                    <p><span className="text-gray-500">LinkedIn:</span> <a href={selectedProfileDetail.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Profile</a></p>
+                    <p><span className="text-gray-500">LinkedIn:</span> <a href={selectedProfileDetail.linkedin_url ?? undefined} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Profile</a></p>
                     {selectedProfileDetail.portfolio_url && (
                       <p><span className="text-gray-500">Portfolio:</span> <a href={selectedProfileDetail.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a></p>
                     )}
@@ -2183,7 +2186,7 @@ const QuickStatCard = ({ icon: Icon, label, value }: { icon: React.ElementType, 
   </Card>
 );
 
-const StatusBadge = ({ status, type: _type }: { status: string; type?: string }) => {
+const StatusBadge = ({ status }: { status: string; type?: string }) => {
   const variantMap: Record<string, "default" | "destructive" | "outline" | "secondary"> = {
     // Talent statuses
     approved: 'default',

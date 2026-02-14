@@ -67,6 +67,7 @@ const ForSponsorsSection = () => {
                 value: stat.value,
                 duration: 1.5,
                 ease: 'expo.out',
+                // eslint-disable-next-line react-hooks/unsupported-syntax
                 onUpdate: function (this: { targets: () => Array<{ value: number }> }) {
                   setCounters((prev) => {
                     const newCounters = [...prev];

@@ -2,7 +2,7 @@
 // OVERVIEW QUERIES - Dashboard and Analytics
 // ============================================================================
 
-import { supabase } from '../supabase/client';
+import { db } from '../insforge/client';
 import { getDaysAgo } from '../format/date';
 import { handleQueryError, handleSingleQueryError } from '../utils/errors';
 import type { QueryResult, ListResult } from '../utils/errors';
@@ -63,85 +63,39 @@ export async function getDashboardMetrics(): Promise<
       talentWeek,
       talentMonth,
     ] = await Promise.all([
-      supabase
-        .from('talent_profiles')
-        .select('*', { count: 'exact', head: true }),
-      supabase
-        .from('talent_profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending'),
-      supabase
-        .from('talent_profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'approved'),
-      supabase
-        .from('talent_profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', today),
-      supabase
-        .from('talent_profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', weekAgo),
-      supabase
-        .from('talent_profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', monthAgo),
+      db.from('talent_profiles').select('*', { count: 'exact', head: true }),
+      db.from('talent_profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      db.from('talent_profiles').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+      db.from('talent_profiles').select('*', { count: 'exact', head: true }).gte('created_at', today),
+      db.from('talent_profiles').select('*', { count: 'exact', head: true }).gte('created_at', weekAgo),
+      db.from('talent_profiles').select('*', { count: 'exact', head: true }).gte('created_at', monthAgo),
     ]);
 
     // Sponsor counts
     const [sponsorTotal, sponsorActive, sponsorInactive, sponsorMonth] =
       await Promise.all([
-        supabase
-          .from('sponsor_profiles')
-          .select('*', { count: 'exact', head: true }),
-        supabase
-          .from('sponsor_profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'active'),
-        supabase
-          .from('sponsor_profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'inactive'),
-        supabase
-          .from('sponsor_profiles')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', monthAgo),
+        db.from('sponsor_profiles').select('*', { count: 'exact', head: true }),
+        db.from('sponsor_profiles').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+        db.from('sponsor_profiles').select('*', { count: 'exact', head: true }).eq('status', 'inactive'),
+        db.from('sponsor_profiles').select('*', { count: 'exact', head: true }).gte('created_at', monthAgo),
       ]);
 
     // Request counts
     const [requestTotal, requestOpen, requestInReview, requestUrgent] =
       await Promise.all([
-        supabase.from('requests').select('*', { count: 'exact', head: true }),
-        supabase
-          .from('requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'open'),
-        supabase
-          .from('requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'in_review'),
-        supabase
-          .from('requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('priority', 'urgent'),
+        db.from('requests').select('*', { count: 'exact', head: true }),
+        db.from('requests').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+        db.from('requests').select('*', { count: 'exact', head: true }).eq('status', 'in_review'),
+        db.from('requests').select('*', { count: 'exact', head: true }).eq('priority', 'urgent'),
       ]);
 
     // Message counts
     const [messageTotal, messageUnread, messageReplied, messageToday] =
       await Promise.all([
-        supabase.from('messages').select('*', { count: 'exact', head: true }),
-        supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'unread'),
-        supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'replied'),
-        supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', today),
+        db.from('messages').select('*', { count: 'exact', head: true }),
+        db.from('messages').select('*', { count: 'exact', head: true }).eq('status', 'unread'),
+        db.from('messages').select('*', { count: 'exact', head: true }).eq('status', 'replied'),
+        db.from('messages').select('*', { count: 'exact', head: true }).gte('created_at', today),
       ]);
 
     const metrics: DashboardMetrics = {
@@ -202,9 +156,7 @@ export async function getSubmissionsTrend(
 ): Promise<ListResult<SubmissionTrend>> {
   try {
     // Try to use the RPC function first
-    const { data, error } = await supabase.rpc('get_submissions_trend', {
-      days,
-    });
+    const { data, error } = await db.rpc('get_submissions_trend', { days });
 
     if (!error && data) {
       const trends = Array.isArray(data) ? data : [];
@@ -217,14 +169,8 @@ export async function getSubmissionsTrend(
     const startDateStr = startDate.toISOString();
 
     const [talentResult, sponsorResult] = await Promise.all([
-      supabase
-        .from('talent_profiles')
-        .select('created_at')
-        .gte('created_at', startDateStr),
-      supabase
-        .from('sponsor_profiles')
-        .select('created_at')
-        .gte('created_at', startDateStr),
+      db.from('talent_profiles').select('created_at').gte('created_at', startDateStr),
+      db.from('sponsor_profiles').select('created_at').gte('created_at', startDateStr),
     ]);
 
     if (talentResult.error) throw talentResult.error;
@@ -242,7 +188,7 @@ export async function getSubmissionsTrend(
     }
 
     // Count talent by date
-    talentResult.data?.forEach((item) => {
+    talentResult.data?.forEach((item: { created_at: string }) => {
       const dateStr = new Date(item.created_at).toISOString().split('T')[0];
       const current = dateMap.get(dateStr);
       if (current) {
@@ -251,7 +197,7 @@ export async function getSubmissionsTrend(
     });
 
     // Count sponsors by date
-    sponsorResult.data?.forEach((item) => {
+    sponsorResult.data?.forEach((item: { created_at: string }) => {
       const dateStr = new Date(item.created_at).toISOString().split('T')[0];
       const current = dateMap.get(dateStr);
       if (current) {
@@ -298,23 +244,19 @@ export async function getRecentActivity(
   try {
     // Fetch recent items from each table
     const [talentRes, sponsorRes, messageRes, requestRes] = await Promise.all([
-      supabase
-        .from('talent_profiles')
+      db.from('talent_profiles')
         .select('id, full_name, status, created_at')
         .order('created_at', { ascending: false })
         .limit(limit),
-      supabase
-        .from('sponsor_profiles')
-        .select('id, full_name, company_name, status, created_at')
+      db.from('sponsor_profiles')
+        .select('id, full_name, organization, status, created_at')
         .order('created_at', { ascending: false })
         .limit(limit),
-      supabase
-        .from('messages')
+      db.from('messages')
         .select('id, sender_name, subject, status, created_at')
         .order('created_at', { ascending: false })
         .limit(limit),
-      supabase
-        .from('requests')
+      db.from('requests')
         .select('id, request_type, status, created_at')
         .order('created_at', { ascending: false })
         .limit(limit),
@@ -323,47 +265,47 @@ export async function getRecentActivity(
     // Combine and format results
     const activities: RecentActivity[] = [];
 
-    talentRes.data?.forEach((item) => {
+    talentRes.data?.forEach((item: { id: string; full_name: string; status: string; created_at: string }) => {
       activities.push({
         id: `talent-${item.id}`,
         type: 'talent',
-        title: (item as any).full_name,
+        title: item.full_name,
         description: 'New talent profile submitted',
-        status: (item as any).status,
-        created_at: (item as any).created_at,
+        status: item.status,
+        created_at: item.created_at,
       });
     });
 
-    sponsorRes.data?.forEach((item) => {
+    sponsorRes.data?.forEach((item: { id: string; full_name: string; organization?: string; status: string; created_at: string }) => {
       activities.push({
         id: `sponsor-${item.id}`,
         type: 'sponsor',
-        title: (item as any).full_name,
-        description: `From ${(item as any).company_name}`,
-        status: (item as any).status,
-        created_at: (item as any).created_at,
+        title: item.full_name,
+        description: item.organization ? `From ${item.organization}` : 'New sponsor',
+        status: item.status,
+        created_at: item.created_at,
       });
     });
 
-    messageRes.data?.forEach((item) => {
+    messageRes.data?.forEach((item: { id: string; sender_name: string; subject?: string; status: string; created_at: string }) => {
       activities.push({
         id: `message-${item.id}`,
         type: 'message',
-        title: (item as any).sender_name,
-        description: (item as any).subject || 'New message',
-        status: (item as any).status,
-        created_at: (item as any).created_at,
+        title: item.sender_name,
+        description: item.subject || 'New message',
+        status: item.status,
+        created_at: item.created_at,
       });
     });
 
-    requestRes.data?.forEach((item) => {
+    requestRes.data?.forEach((item: { id: string; request_type: string; status: string; created_at: string }) => {
       activities.push({
         id: `request-${item.id}`,
         type: 'request',
         title: 'New Request',
-        description: (item as any).request_type.replace('_', ' '),
-        status: (item as any).status,
-        created_at: (item as any).created_at,
+        description: item.request_type.replace('_', ' '),
+        status: item.status,
+        created_at: item.created_at,
       });
     });
 
@@ -400,9 +342,7 @@ export async function getStatusDistribution(
   table: 'talent_profiles' | 'sponsor_profiles' | 'requests' | 'messages'
 ): Promise<ListResult<StatusDistribution>> {
   try {
-    const { data, error } = await supabase
-      .from(table)
-      .select('status');
+    const { data, error } = await db.from(table).select('status');
 
     if (error) throw error;
 
@@ -410,8 +350,8 @@ export async function getStatusDistribution(
     const counts: Record<string, number> = {};
     const total = data?.length || 0;
 
-    data?.forEach((item) => {
-      counts[(item as any).status] = (counts[(item as any).status] || 0) + 1;
+    data?.forEach((item: { status: string }) => {
+      counts[item.status] = (counts[item.status] || 0) + 1;
     });
 
     // Calculate distribution

@@ -2,7 +2,7 @@
 // SPONSOR QUERIES - Single Source of Truth for Sponsor Operations
 // ============================================================================
 
-import { supabase } from '../supabase/client';
+import { db } from '../insforge/client';
 import type { SponsorProfile, SponsorProfileInput, SponsorProfileUpdate, SponsorFilters } from '../types/db';
 import type { PaginatedResult, PaginationParams, QueryResult, ListResult } from '../utils/errors';
 import { SponsorStatus } from '../types/enums';
@@ -40,7 +40,7 @@ export async function listSponsors(
   const sortOrder = pagination.sortOrder ?? 'desc';
   
   try {
-    let query = supabase
+    let query = db
       .from('sponsor_profiles')
       .select('*', { count: 'exact' });
     
@@ -130,7 +130,7 @@ export async function getAllSponsors(
   filters?: Omit<SponsorFilters, 'search'>
 ): Promise<ListResult<SponsorProfile>> {
   try {
-    let query = supabase.from('sponsor_profiles').select('*');
+    let query = db.from('sponsor_profiles').select('*');
     
     if (filters?.status) {
       query = query.eq('status', filters.status);
@@ -163,7 +163,7 @@ export async function getSponsorById(
   id: string
 ): Promise<QueryResult<SponsorProfile>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('sponsor_profiles')
       .select('*')
       .eq('id', id)
@@ -186,7 +186,7 @@ export async function getSponsorByEmail(
   email: string
 ): Promise<QueryResult<SponsorProfile>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('sponsor_profiles')
       .select('*')
       .eq('email', email)
@@ -213,7 +213,7 @@ export async function createSponsor(
   input: SponsorProfileInput
 ): Promise<QueryResult<SponsorProfile>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('sponsor_profiles')
       .insert(input)
       .select()
@@ -238,7 +238,7 @@ export async function updateSponsor(
   updates: SponsorProfileUpdate
 ): Promise<QueryResult<SponsorProfile>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('sponsor_profiles')
       .update(updates)
       .eq('id', id)
@@ -321,7 +321,7 @@ export async function deleteSponsor(
   id: string
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    const { error } = await supabase
+    const { error } = await db
       .from('sponsor_profiles')
       .delete()
       .eq('id', id);
@@ -349,7 +349,7 @@ export async function getSponsorStatusCounts(): Promise<
   QueryResult<Array<{ status: string; count: number }>>
 > {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('sponsor_profiles')
       .select('status');
 
@@ -378,7 +378,7 @@ export async function getSponsorStatusCounts(): Promise<
  */
 export async function getActiveSponsorCount(): Promise<number> {
   try {
-    const { count, error } = await supabase
+    const { count, error } = await db
       .from('sponsor_profiles')
       .select('*', { count: 'exact', head: true })
       .eq('status', SponsorStatus.ACTIVE);
@@ -400,7 +400,7 @@ export async function getRecentSponsors(
   limit: number = 10
 ): Promise<ListResult<SponsorProfile>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('sponsor_profiles')
       .select('*')
       .order('created_at', { ascending: false })

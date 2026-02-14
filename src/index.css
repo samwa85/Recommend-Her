@@ -6,26 +6,27 @@
 
 @layer base {
   :root {
-    /* OKLCH Color System - Light Mode */
-    --background: oklch(0.985 0.01 340);
-    --foreground: oklch(0.25 0.08 340);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.25 0.08 340);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.25 0.08 340);
-    --primary: oklch(0.55 0.20 20);
-    --primary-foreground: oklch(1 0 0);
-    --secondary: oklch(0.96 0.02 340);
-    --secondary-foreground: oklch(0.25 0.08 340);
-    --muted: oklch(0.94 0.015 340);
-    --muted-foreground: oklch(0.45 0.05 340);
-    --accent: oklch(0.85 0.08 45);
-    --accent-foreground: oklch(0.25 0.08 340);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.90 0.02 340);
-    --input: oklch(0.90 0.02 340);
-    --ring: oklch(0.55 0.20 20);
+    /* HSL Color System - Light Mode */
+    /* Converted from OKLCH to HSL for Tailwind compatibility */
+    --background: 340 20% 98%;
+    --foreground: 340 25% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 340 25% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 340 25% 15%;
+    --primary: 20 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 340 15% 95%;
+    --secondary-foreground: 340 25% 15%;
+    --muted: 340 10% 92%;
+    --muted-foreground: 340 10% 40%;
+    --accent: 30 80% 55%;
+    --accent-foreground: 340 25% 15%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 340 10% 88%;
+    --input: 340 10% 88%;
+    --ring: 20 70% 45%;
     --radius: 0.625rem;
     
     /* Typography */
@@ -37,7 +38,7 @@
 
 @layer base {
   * {
-    @apply border-[var(--border)];
+    @apply border-[hsl(var(--border))];
   }
   
   html {
@@ -46,8 +47,8 @@
   }
   
   body {
-    background-color: var(--background);
-    color: var(--foreground);
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-family: var(--font-sans);
     font-weight: 400;
     line-height: 1.7;
@@ -58,7 +59,7 @@
     font-family: var(--font-serif);
     font-weight: 700;
     line-height: 1.2;
-    color: var(--foreground);
+    color: hsl(var(--foreground));
     letter-spacing: -0.01em;
   }
 
@@ -96,38 +97,38 @@
   
   .btn-primary {
     @apply px-8 py-4 rounded-xl font-sans font-semibold transition-all duration-300;
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-    box-shadow: 0 4px 14px oklch(0.55 0.20 20 / 0.25);
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    box-shadow: 0 4px 14px hsl(var(--primary) / 0.25);
   }
   
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px oklch(0.55 0.20 20 / 0.35);
+    box-shadow: 0 6px 20px hsl(var(--primary) / 0.35);
   }
   
   .btn-secondary {
     @apply px-8 py-4 rounded-xl font-sans font-semibold transition-all duration-300;
-    background-color: var(--secondary);
-    color: var(--secondary-foreground);
-    border: 2px solid var(--border);
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    border: 2px solid hsl(var(--border));
   }
   
   .btn-secondary:hover {
-    background-color: var(--muted);
+    background-color: hsl(var(--muted));
     transform: translateY(-2px);
   }
   
   .btn-outline {
     @apply px-8 py-4 rounded-xl font-sans font-semibold transition-all duration-300 border-2;
-    border-color: var(--primary);
-    color: var(--primary);
+    border-color: hsl(var(--primary));
+    color: hsl(var(--primary));
     background: transparent;
   }
   
   .btn-outline:hover {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
     transform: translateY(-2px);
   }
   
@@ -147,7 +148,7 @@
   
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, var(--primary), oklch(0.65 0.18 25));
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(20 65% 50%));
   }
 }
 
@@ -182,10 +183,10 @@
 
 @keyframes pulseGlow {
   0%, 100% {
-    box-shadow: 0 0 20px oklch(0.55 0.20 20 / 0.3);
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
   }
   50% {
-    box-shadow: 0 0 30px oklch(0.55 0.20 20 / 0.5);
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.5);
   }
 }
 
@@ -204,14 +205,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--background);
+  background: hsl(var(--background));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--primary);
+  background: hsl(var(--primary));
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.50 0.22 20);
+  background: hsl(20 75% 40%);
 }

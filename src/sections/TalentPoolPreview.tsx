@@ -97,7 +97,7 @@ const TalentPoolPreview = () => {
     <section 
       ref={sectionRef} 
       className="py-24 lg:py-32 overflow-hidden"
-      style={{ backgroundColor: 'var(--background)' }}
+      style={{ backgroundColor: 'hsl(var(--background))' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
@@ -108,19 +108,19 @@ const TalentPoolPreview = () => {
           <div>
             <p 
               className="font-sans text-sm uppercase tracking-[4px] mb-4"
-              style={{ color: 'var(--primary)' }}
+              style={{ color: 'hsl(var(--primary))' }}
             >
               Talent Pool
             </p>
             <h2 
               className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold mb-4"
-              style={{ color: 'var(--foreground)' }}
+              style={{ color: 'hsl(var(--foreground))' }}
             >
               Meet Our Community
             </h2>
             <p 
               className="font-sans text-lg max-w-xl leading-relaxed"
-              style={{ color: 'var(--muted-foreground)' }}
+              style={{ color: 'hsl(var(--muted-foreground))' }}
             >
               A glimpse of the exceptional women in our network, ready for their
               next leadership opportunity.
@@ -129,7 +129,7 @@ const TalentPoolPreview = () => {
           <Link
             to="/talent-pool"
             className="group inline-flex items-center gap-2 mt-6 md:mt-0 font-sans font-semibold transition-colors duration-300"
-            style={{ color: 'var(--primary)' }}
+            style={{ color: 'hsl(var(--primary))' }}
           >
             View Full Directory
             <ArrowRight
@@ -151,15 +151,15 @@ const TalentPoolPreview = () => {
               onClick={() => navigate(`/talent/${talent.id}`)}
               className="group rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-4 cursor-pointer"
               style={{ 
-                backgroundColor: 'var(--card)',
+                backgroundColor: 'hsl(var(--card))',
                 boxShadow: 'var(--shadow)',
-                border: '1px solid var(--border)'
+                border: '1px solid hsl(var(--border))'
               }}
             >
               {/* Avatar with Image */}
               <div
                 className="relative h-40 overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, oklch(0.35 0.15 340), oklch(0.45 0.18 345))' }}
+                style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(346 60% 42%))' }}
               >
                 <img
                   src={talent.image}
@@ -180,7 +180,7 @@ const TalentPoolPreview = () => {
               <div className="p-6">
                 <h3 
                   className="font-serif text-lg sm:text-xl font-bold mb-2"
-                  style={{ color: 'var(--foreground)' }}
+                  style={{ color: 'hsl(var(--foreground))' }}
                 >
                   {talent.title}
                 </h3>
@@ -192,8 +192,8 @@ const TalentPoolPreview = () => {
                       key={tag}
                       className="px-3 py-1 rounded-full font-sans text-sm font-medium"
                       style={{ 
-                        backgroundColor: 'var(--primary)',
-                        color: 'var(--primary-foreground)'
+                        backgroundColor: 'hsl(var(--primary))',
+                        color: 'hsl(var(--primary-foreground))'
                       }}
                     >
                       {tag}
@@ -203,7 +203,7 @@ const TalentPoolPreview = () => {
 
                 <p 
                   className="font-sans text-base line-clamp-2 mb-4 leading-relaxed"
-                  style={{ color: 'var(--muted-foreground)' }}
+                  style={{ color: 'hsl(var(--muted-foreground))' }}
                 >
                   {talent.expertise}
                 </p>
@@ -211,7 +211,7 @@ const TalentPoolPreview = () => {
                 {/* CTA */}
                 <span
                   className="inline-flex items-center gap-2 font-sans text-sm font-semibold transition-all duration-300"
-                  style={{ color: 'var(--primary)' }}
+                  style={{ color: 'hsl(var(--primary))' }}
                 >
                   View Profile
                   <ArrowUpRight

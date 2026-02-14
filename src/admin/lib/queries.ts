@@ -22,7 +22,7 @@ import type {
   PaginatedData,
   DashboardMetrics,
   AnalyticsData,
-  TimeSeriesData,
+  TimeSeriesDataPoint,
   ActivityLog,
 } from './types';
 
@@ -135,16 +135,13 @@ export async function updateTalentStatus(
   status: TalentStatus,
   notes?: string
 ): Promise<{ error: Error | null }> {
-  const updates: any = { status };
+  const updates: Record<string, unknown> = { status };
   
   if (status === 'approved') {
-    updates.approved_at = new Date().toISOString();
-  }
-  if (status === 'vetted') {
-    updates.vetted_at = new Date().toISOString();
+    updates['approved_at'] = new Date().toISOString();
   }
   if (notes) {
-    updates.admin_private_notes = notes;
+    updates['admin_private_notes'] = notes;
   }
 
   const { error } = await supabase
@@ -210,8 +207,8 @@ export async function getSponsorList(
   if (filters.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);
   }
-  if (filters.sponsorType) {
-    query = query.eq('sponsor_type', filters.sponsorType);
+  if (filters.sponsor_type) {
+    query = query.eq('sponsor_type', filters.sponsor_type);
   }
   if (filters.industry) {
     query = query.ilike('industry', `%${filters.industry}%`);
@@ -491,8 +488,8 @@ export async function getMessageList(
   if (filters.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);
   }
-  if (filters.inquiryType) {
-    query = query.eq('inquiry_type', filters.inquiryType);
+  if (filters.inquiry_type) {
+    query = query.eq('inquiry_type', filters.inquiry_type);
   }
   if (filters.dateFrom) {
     query = query.gte('created_at', filters.dateFrom);
@@ -638,22 +635,26 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   ]);
 
   return {
-    totalTalent: talentTotal.count || 0,
-    newTalentToday: talentToday.count || 0,
-    newTalent7Days: talent7Days.count || 0,
-    newTalent30Days: talent30Days.count || 0,
-    totalSponsors: sponsorTotal.count || 0,
-    newSponsorsToday: sponsorToday.count || 0,
-    newSponsors7Days: sponsor7Days.count || 0,
-    newSponsors30Days: sponsor30Days.count || 0,
-    totalRequests: requestTotal.count || 0,
-    openRequests: requestOpen.count || 0,
-    newRequestsToday: requestToday.count || 0,
-    newRequests7Days: request7Days.count || 0,
-    totalMessages: messageTotal.count || 0,
-    unreadMessages: messageUnread.count || 0,
-    newMessagesToday: messageToday.count || 0,
-    newMessages7Days: message7Days.count || 0,
+    total_talent: talentTotal.count || 0,
+    pending_talent: 0, // Would need separate query to calculate
+    approved_talent: 0, // Would need separate query to calculate
+    rejected_talent: 0, // Would need separate query to calculate
+    new_talent_today: talentToday.count || 0,
+    new_talent_7d: talent7Days.count || 0,
+    new_talent_30d: talent30Days.count || 0,
+    total_sponsors: sponsorTotal.count || 0,
+    active_sponsors: 0, // Would need separate query to calculate
+    new_sponsors_today: sponsorToday.count || 0,
+    new_sponsors_7d: sponsor7Days.count || 0,
+    new_sponsors_30d: sponsor30Days.count || 0,
+    total_requests: requestTotal.count || 0,
+    open_requests: requestOpen.count || 0,
+    new_requests_today: requestToday.count || 0,
+    new_requests_7d: request7Days.count || 0,
+    total_messages: messageTotal.count || 0,
+    unread_messages: messageUnread.count || 0,
+    new_messages_today: messageToday.count || 0,
+    new_messages_7d: message7Days.count || 0,
   };
 }
 
@@ -718,7 +719,7 @@ export async function getAnalyticsData(days: number = 30): Promise<AnalyticsData
     .select('status');
 
   // Helper function to create time series data
-  const createTimeSeries = (data: { created_at: string }[]): TimeSeriesData[] => {
+  const createTimeSeries = (data: { created_at: string }[]): TimeSeriesDataPoint[] => {
     const grouped = data.reduce((acc, item) => {
       const date = item.created_at.split('T')[0];
       acc[date] = (acc[date] || 0) + 1;

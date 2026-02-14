@@ -12,21 +12,21 @@ const steps = [
     icon: UserPlus,
     title: 'Submit Your Profile',
     description: 'Talent submits a curated profile to our vetted network.',
-    color: 'bg-[var(--primary)]',
+    color: 'bg-[hsl(var(--primary))]',
   },
   {
     number: '02',
     icon: Handshake,
     title: 'Sponsors Pledge',
     description: 'Sponsors pledge to recommend actively from our talent pool.',
-    color: 'bg-[var(--accent)]',
+    color: 'bg-[hsl(var(--accent))]',
   },
   {
     number: '03',
     icon: Rocket,
     title: 'Create Opportunities',
     description: 'Matches create career-defining opportunities for women leaders.',
-    color: 'bg-oklch(0.35 0.15 340)',
+    color: 'bg-[hsl(var(--primary))]',
   },
 ];
 
@@ -84,26 +84,26 @@ const HowItWorks = () => {
     <section 
       ref={sectionRef} 
       className="py-24 lg:py-32"
-      style={{ backgroundColor: 'var(--card)' }}
+      style={{ backgroundColor: 'hsl(var(--card))' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div ref={headerRef} className="text-center mb-16">
           <p 
             className="font-sans text-sm uppercase tracking-[4px] mb-4"
-            style={{ color: 'var(--primary)' }}
+            style={{ color: 'hsl(var(--primary))' }}
           >
             How It Works
           </p>
           <h2 
             className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold mb-6"
-            style={{ color: 'var(--foreground)' }}
+            style={{ color: 'hsl(var(--foreground))' }}
           >
             Three Steps to Change
           </h2>
           <p 
             className="font-sans text-lg max-w-2xl mx-auto leading-relaxed"
-            style={{ color: 'var(--muted-foreground)' }}
+            style={{ color: 'hsl(var(--muted-foreground))' }}
           >
             Our simple process connects talented women with leaders ready to advocate for them.
           </p>
@@ -121,11 +121,11 @@ const HowItWorks = () => {
               {index < steps.length - 1 && (
                 <div 
                   className="hidden md:block absolute top-16 left-[60%] w-full h-0.5"
-                  style={{ backgroundColor: 'var(--border)' }}
+                  style={{ backgroundColor: 'hsl(var(--border))' }}
                 >
                   <div 
                     className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full"
-                    style={{ backgroundColor: 'var(--primary)' }}
+                    style={{ backgroundColor: 'hsl(var(--primary))' }}
                   />
                 </div>
               )}
@@ -133,7 +133,7 @@ const HowItWorks = () => {
               <div 
                 className="rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2"
                 style={{ 
-                  backgroundColor: 'var(--background)',
+                  backgroundColor: 'hsl(var(--background))',
                   boxShadow: 'var(--shadow)'
                 }}
               >
@@ -145,7 +145,7 @@ const HowItWorks = () => {
                 {/* Number */}
                 <span 
                   className="font-serif text-5xl font-bold block mb-4"
-                  style={{ color: 'var(--border)' }}
+                  style={{ color: 'hsl(var(--border))' }}
                 >
                   {step.number}
                 </span>
@@ -153,13 +153,13 @@ const HowItWorks = () => {
                 {/* Content */}
                 <h3 
                   className="font-serif text-xl sm:text-2xl font-bold mb-3"
-                  style={{ color: 'var(--foreground)' }}
+                  style={{ color: 'hsl(var(--foreground))' }}
                 >
                   {step.title}
                 </h3>
                 <p 
                   className="font-sans text-base leading-relaxed"
-                  style={{ color: 'var(--muted-foreground)' }}
+                  style={{ color: 'hsl(var(--muted-foreground))' }}
                 >
                   {step.description}
                 </p>
@@ -173,7 +173,7 @@ const HowItWorks = () => {
           <Link
             to="/mission"
             className="group inline-flex items-center gap-2 font-sans font-semibold transition-colors duration-300"
-            style={{ color: 'var(--primary)' }}
+            style={{ color: 'hsl(var(--primary))' }}
           >
             See Success Stories
             <ArrowRight

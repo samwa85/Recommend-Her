@@ -287,15 +287,15 @@ const TalentDetail = () => {
 
   if (!talent) {
     return (
-      <section ref={pageRef} className="pt-32 pb-24 min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
+      <section ref={pageRef} className="pt-32 pb-24 min-h-screen" style={{ backgroundColor: 'hsl(var(--background))' }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="font-serif text-3xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
+          <h1 className="font-serif text-3xl font-bold mb-4" style={{ color: 'hsl(var(--foreground))' }}>
             Talent Not Found
           </h1>
-          <p className="font-sans mb-8" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="font-sans mb-8" style={{ color: 'hsl(var(--muted-foreground))' }}>
             The talent profile you're looking for doesn't exist.
           </p>
-          <Button onClick={() => navigate('/talent-pool')} style={{ backgroundColor: 'var(--primary)' }}>
+          <Button onClick={() => navigate('/talent-pool')} style={{ backgroundColor: 'hsl(var(--primary))' }}>
             Back to Talent Pool
           </Button>
         </div>
@@ -304,14 +304,14 @@ const TalentDetail = () => {
   }
 
   return (
-    <section ref={pageRef} className="pt-24 pb-24 min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
+    <section ref={pageRef} className="pt-24 pb-24 min-h-screen" style={{ backgroundColor: 'hsl(var(--background))' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <div className="talent-header mb-8">
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-2 font-sans text-sm transition-colors duration-300 hover:opacity-70"
-            style={{ color: 'var(--muted-foreground)' }}
+            style={{ color: 'hsl(var(--muted-foreground))' }}
           >
             <ArrowLeft size={18} />
             Back to Talent Pool
@@ -323,15 +323,15 @@ const TalentDetail = () => {
           ref={contentRef}
           className="content-section rounded-3xl overflow-hidden mb-8"
           style={{ 
-            backgroundColor: 'var(--card)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border))',
             boxShadow: 'var(--shadow)'
           }}
         >
           {/* Header with gradient */}
           <div 
             className="relative h-48 sm:h-64 px-8 sm:px-12 flex items-end pb-8"
-            style={{ background: 'linear-gradient(135deg, oklch(0.35 0.15 340), oklch(0.45 0.18 345))' }}
+            style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(346 60% 42%))' }}
           >
             <div className="absolute top-6 right-6 flex gap-2">
               <Badge variant="secondary" className="bg-white/20 text-white border-0">
@@ -369,14 +369,14 @@ const TalentDetail = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="px-8 sm:px-12 py-6 flex flex-wrap items-center justify-between gap-4" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="px-8 sm:px-12 py-6 flex flex-wrap items-center justify-between gap-4" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
             <div className="flex flex-wrap gap-2">
               {talent.tags.map((tag) => (
                 <Badge 
                   key={tag}
                   style={{ 
-                    backgroundColor: 'var(--primary)',
-                    color: 'var(--primary-foreground)'
+                    backgroundColor: 'hsl(var(--primary))',
+                    color: 'hsl(var(--primary-foreground))'
                   }}
                 >
                   {tag}
@@ -385,7 +385,7 @@ const TalentDetail = () => {
             </div>
             <Button
               onClick={() => setRequestDialogOpen(true)}
-              style={{ backgroundColor: 'var(--primary)' }}
+              style={{ backgroundColor: 'hsl(var(--primary))' }}
               className="text-white hover:opacity-90"
             >
               Request Introduction
@@ -402,16 +402,16 @@ const TalentDetail = () => {
             <div 
               className="content-section rounded-2xl p-6 sm:p-8"
               style={{ 
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
                 boxShadow: 'var(--shadow)'
               }}
             >
-              <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-                <FileText size={20} style={{ color: 'var(--primary)' }} />
+              <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
+                <FileText size={20} style={{ color: 'hsl(var(--primary))' }} />
                 About
               </h2>
-              <p className="font-sans leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+              <p className="font-sans leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 {talent.bio}
               </p>
             </div>
@@ -420,13 +420,13 @@ const TalentDetail = () => {
             <div 
               className="content-section rounded-2xl p-6 sm:p-8"
               style={{ 
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
                 boxShadow: 'var(--shadow)'
               }}
             >
-              <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-                <Award size={20} style={{ color: 'var(--primary)' }} />
+              <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
+                <Award size={20} style={{ color: 'hsl(var(--primary))' }} />
                 Skills & Expertise
               </h2>
               <div className="flex flex-wrap gap-2">
@@ -435,8 +435,8 @@ const TalentDetail = () => {
                     key={skill} 
                     variant="outline"
                     style={{ 
-                      borderColor: 'var(--border)',
-                      color: 'var(--foreground)'
+                      borderColor: 'hsl(var(--border))',
+                      color: 'hsl(var(--foreground))'
                     }}
                     className="px-3 py-1"
                   >
@@ -450,13 +450,13 @@ const TalentDetail = () => {
             <div 
               className="content-section rounded-2xl p-6 sm:p-8"
               style={{ 
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
                 boxShadow: 'var(--shadow)'
               }}
             >
-              <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-                <CheckCircle2 size={20} style={{ color: 'var(--primary)' }} />
+              <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
+                <CheckCircle2 size={20} style={{ color: 'hsl(var(--primary))' }} />
                 Key Achievements
               </h2>
               <ul className="space-y-3">
@@ -464,11 +464,11 @@ const TalentDetail = () => {
                   <li key={i} className="flex items-start gap-3">
                     <span 
                       className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+                      style={{ backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' }}
                     >
                       <span className="text-xs font-bold">{i + 1}</span>
                     </span>
-                    <span className="font-sans" style={{ color: 'var(--foreground)' }}>
+                    <span className="font-sans" style={{ color: 'hsl(var(--foreground))' }}>
                       {achievement}
                     </span>
                   </li>
@@ -480,27 +480,27 @@ const TalentDetail = () => {
             <div 
               className="content-section rounded-2xl p-6 sm:p-8"
               style={{ 
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
                 boxShadow: 'var(--shadow)'
               }}
             >
-              <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-                <Calendar size={20} style={{ color: 'var(--primary)' }} />
+              <h2 className="font-serif text-xl font-bold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
+                <Calendar size={20} style={{ color: 'hsl(var(--primary))' }} />
                 Education
               </h2>
               <div className="space-y-4">
                 {talent.education.map((edu, i) => (
                   <div key={i} className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-sans font-semibold" style={{ color: 'var(--foreground)' }}>
+                      <h3 className="font-sans font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
                         {edu.degree}
                       </h3>
-                      <p className="font-sans text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                      <p className="font-sans text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                         {edu.school}
                       </p>
                     </div>
-                    <span className="font-sans text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                    <span className="font-sans text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                       {edu.year}
                     </span>
                   </div>
@@ -515,27 +515,27 @@ const TalentDetail = () => {
             <div 
               className="content-section rounded-2xl p-6"
               style={{ 
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
                 boxShadow: 'var(--shadow)'
               }}
             >
-              <h3 className="font-serif text-lg font-bold mb-4" style={{ color: 'var(--foreground)' }}>
+              <h3 className="font-serif text-lg font-bold mb-4" style={{ color: 'hsl(var(--foreground))' }}>
                 At a Glance
               </h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <MapPinIcon />
                   <div>
-                    <p className="font-sans text-xs" style={{ color: 'var(--muted-foreground)' }}>Location</p>
-                    <p className="font-sans font-medium" style={{ color: 'var(--foreground)' }}>{talent.location}</p>
+                    <p className="font-sans text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Location</p>
+                    <p className="font-sans font-medium" style={{ color: 'hsl(var(--foreground))' }}>{talent.location}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <LanguagesIcon />
                   <div>
-                    <p className="font-sans text-xs" style={{ color: 'var(--muted-foreground)' }}>Languages</p>
-                    <p className="font-sans font-medium" style={{ color: 'var(--foreground)' }}>
+                    <p className="font-sans text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Languages</p>
+                    <p className="font-sans font-medium" style={{ color: 'hsl(var(--foreground))' }}>
                       {talent.languages.join(', ')}
                     </p>
                   </div>
@@ -543,8 +543,8 @@ const TalentDetail = () => {
                 <div className="flex items-center gap-3">
                   <AvailabilityIcon />
                   <div>
-                    <p className="font-sans text-xs" style={{ color: 'var(--muted-foreground)' }}>Availability</p>
-                    <p className="font-sans font-medium" style={{ color: 'var(--foreground)' }}>{talent.availability}</p>
+                    <p className="font-sans text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Availability</p>
+                    <p className="font-sans font-medium" style={{ color: 'hsl(var(--foreground))' }}>{talent.availability}</p>
                   </div>
                 </div>
               </div>
@@ -554,12 +554,12 @@ const TalentDetail = () => {
             <div 
               className="content-section rounded-2xl p-6"
               style={{ 
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
                 boxShadow: 'var(--shadow)'
               }}
             >
-              <h3 className="font-serif text-lg font-bold mb-4" style={{ color: 'var(--foreground)' }}>
+              <h3 className="font-serif text-lg font-bold mb-4" style={{ color: 'hsl(var(--foreground))' }}>
                 Target Roles
               </h3>
               <div className="space-y-2">
@@ -567,7 +567,7 @@ const TalentDetail = () => {
                   <div 
                     key={role}
                     className="font-sans text-sm py-2 px-3 rounded-lg"
-                    style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-foreground)' }}
+                    style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }}
                   >
                     {role}
                   </div>
@@ -579,19 +579,19 @@ const TalentDetail = () => {
             <div 
               className="content-section rounded-2xl p-6"
               style={{ 
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
                 boxShadow: 'var(--shadow)'
               }}
             >
-              <h3 className="font-serif text-lg font-bold mb-4" style={{ color: 'var(--foreground)' }}>
+              <h3 className="font-serif text-lg font-bold mb-4" style={{ color: 'hsl(var(--foreground))' }}>
                 Certifications
               </h3>
               <ul className="space-y-2">
                 {talent.certifications.map((cert, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <Award size={16} style={{ color: 'var(--primary)' }} className="flex-shrink-0 mt-0.5" />
-                    <span className="font-sans text-sm" style={{ color: 'var(--foreground)' }}>{cert}</span>
+                    <Award size={16} style={{ color: 'hsl(var(--primary))' }} className="flex-shrink-0 mt-0.5" />
+                    <span className="font-sans text-sm" style={{ color: 'hsl(var(--foreground))' }}>{cert}</span>
                   </li>
                 ))}
               </ul>
@@ -602,12 +602,12 @@ const TalentDetail = () => {
               <div 
                 className="content-section rounded-2xl p-6"
                 style={{ 
-                  backgroundColor: 'var(--card)',
-                  border: '1px solid var(--border)',
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
                   boxShadow: 'var(--shadow)'
                 }}
               >
-                <h3 className="font-serif text-lg font-bold mb-4" style={{ color: 'var(--foreground)' }}>
+                <h3 className="font-serif text-lg font-bold mb-4" style={{ color: 'hsl(var(--foreground))' }}>
                   Links
                 </h3>
                 <div className="space-y-3">
@@ -617,7 +617,7 @@ const TalentDetail = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 font-sans text-sm transition-colors hover:opacity-70"
-                      style={{ color: 'var(--primary)' }}
+                      style={{ color: 'hsl(var(--primary))' }}
                     >
                       <Globe size={16} />
                       Portfolio
@@ -630,7 +630,7 @@ const TalentDetail = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 font-sans text-sm transition-colors hover:opacity-70"
-                      style={{ color: 'var(--primary)' }}
+                      style={{ color: 'hsl(var(--primary))' }}
                     >
                       <Mail size={16} />
                       LinkedIn
@@ -647,7 +647,7 @@ const TalentDetail = () => {
         <div 
           className="content-section mt-12 rounded-2xl p-8 text-center"
           style={{ 
-            background: 'linear-gradient(135deg, oklch(0.35 0.15 340), oklch(0.45 0.18 345))',
+            background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(346 60% 42%))',
           }}
         >
           <h2 className="font-serif text-2xl font-bold text-white mb-3">
@@ -670,31 +670,31 @@ const TalentDetail = () => {
 
       {/* Request Introduction Dialog */}
       <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}>
+        <DialogContent className="sm:max-w-md rounded-2xl" style={{ backgroundColor: 'hsl(var(--card))', border: '1px solid var(--border)' }}>
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
+            <DialogTitle className="font-serif text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
               Request Introduction
             </DialogTitle>
-            <DialogDescription className="font-sans" style={{ color: 'var(--muted-foreground)' }}>
+            <DialogDescription className="font-sans" style={{ color: 'hsl(var(--muted-foreground))' }}>
               We'll connect you with this talent to discuss potential opportunities.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-6 space-y-4">
             <div 
               className="flex items-center gap-4 p-4 rounded-xl"
-              style={{ backgroundColor: 'var(--accent)' }}
+              style={{ backgroundColor: 'hsl(var(--accent))' }}
             >
               <div 
                 className="w-16 h-16 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: 'var(--primary)' }}
+                style={{ backgroundColor: 'hsl(var(--primary))' }}
               >
-                <User size={24} style={{ color: 'var(--primary-foreground)' }} />
+                <User size={24} style={{ color: 'hsl(var(--primary-foreground))' }} />
               </div>
               <div>
-                <h4 className="font-serif text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+                <h4 className="font-serif text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>
                   {talent.title}
                 </h4>
-                <p className="font-sans text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                <p className="font-sans text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   {talent.industry} • {talent.experience}
                 </p>
               </div>
@@ -705,7 +705,7 @@ const TalentDetail = () => {
                 alert('Introduction request sent! Our team will be in touch.');
               }}
               className="w-full h-12 text-white font-semibold rounded-lg transition-all duration-300"
-              style={{ backgroundColor: 'var(--primary)' }}
+              style={{ backgroundColor: 'hsl(var(--primary))' }}
             >
               Send Request
             </Button>
@@ -718,20 +718,20 @@ const TalentDetail = () => {
 
 // Helper icons
 const MapPinIcon = () => (
-  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--accent)' }}>
-    <Globe size={18} style={{ color: 'var(--primary)' }} />
+  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'hsl(var(--accent))' }}>
+    <Globe size={18} style={{ color: 'hsl(var(--primary))' }} />
   </div>
 );
 
 const LanguagesIcon = () => (
-  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--accent)' }}>
-    <span style={{ color: 'var(--primary)' }} className="font-bold text-sm">Aa</span>
+  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'hsl(var(--accent))' }}>
+    <span style={{ color: 'hsl(var(--primary))' }} className="font-bold text-sm">Aa</span>
   </div>
 );
 
 const AvailabilityIcon = () => (
-  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--accent)' }}>
-    <Clock size={18} style={{ color: 'var(--primary)' }} />
+  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'hsl(var(--accent))' }}>
+    <Clock size={18} style={{ color: 'hsl(var(--primary))' }} />
   </div>
 );
 

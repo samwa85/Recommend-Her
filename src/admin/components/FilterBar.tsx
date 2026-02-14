@@ -219,7 +219,7 @@ export function FilterBar({
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2">
           {Object.entries(values)
-            .filter(([_, value]) => value)
+            .filter(([, value]) => value)
             .map(([key, value]) => {
               const filter = filters.find((f) => f.key === key);
               if (!filter) return null;

@@ -44,6 +44,37 @@ import { formatRelativeTime } from '@/lib/format/date';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
+// HELPER FUNCTIONS (moved outside component)
+// ============================================================================
+
+type IconName = 'UserCheck' | 'Building2' | 'Mail' | 'MessageSquare' | 'Activity';
+
+const getActionIconName = (type: string): IconName => {
+  if (type === 'talent') return 'UserCheck';
+  if (type === 'sponsor') return 'Building2';
+  if (type === 'message') return 'Mail';
+  if (type === 'request') return 'MessageSquare';
+  return 'Activity';
+};
+
+const getActionColor = (type: string): string => {
+  if (type === 'talent') return 'text-blue-600 bg-blue-50';
+  if (type === 'sponsor') return 'text-green-600 bg-green-50';
+  if (type === 'message') return 'text-yellow-600 bg-yellow-50';
+  if (type === 'request') return 'text-purple-600 bg-purple-50';
+  return 'text-gray-600 bg-gray-50';
+};
+
+// Icon mapping object (outside component)
+const ICON_MAP = {
+  UserCheck,
+  Building2,
+  Mail,
+  MessageSquare,
+  Activity,
+};
+
+// ============================================================================
 // COLORS
 // ============================================================================
 
@@ -398,35 +429,20 @@ interface ActivityItemProps {
 }
 
 function ActivityItem({ log }: ActivityItemProps) {
-  const getActionIcon = (type: string) => {
-    if (type === 'talent') return UserCheck;
-    if (type === 'sponsor') return Building2;
-    if (type === 'message') return Mail;
-    if (type === 'request') return MessageSquare;
-    return Activity;
-  };
-
-  const getActionColor = (type: string) => {
-    if (type === 'talent') return 'text-blue-600 bg-blue-50';
-    if (type === 'sponsor') return 'text-green-600 bg-green-50';
-    if (type === 'message') return 'text-yellow-600 bg-yellow-50';
-    if (type === 'request') return 'text-purple-600 bg-purple-50';
-    return 'text-gray-600 bg-gray-50';
-  };
-
-  const Icon = getActionIcon(log.type);
+  const iconName = getActionIconName(log.type);
+  const IconComponent = ICON_MAP[iconName];
   const colorClass = getActionColor(log.type);
 
   return (
     <div className="flex gap-3">
       <div className={cn('w-8 h-8 rounded-full flex items-center justify-center shrink-0', colorClass)}>
-        <Icon className="w-4 h-4" />
+        <IconComponent className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{log.title}</p>
         <p className="text-xs text-muted-foreground">{log.description}</p>
         <div className="flex items-center gap-2 mt-1">
-          <StatusBadge status={log.status} type={log.type as any} />
+          <StatusBadge status={log.status} type={log.type as 'talent' | 'sponsor' | 'message' | 'request' | 'user' } />
           <span className="text-xs text-muted-foreground">
             {formatRelativeTime(log.created_at)}
           </span>

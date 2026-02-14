@@ -25,7 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/insforge/client';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -100,13 +100,19 @@ const Contact = () => {
         inquiry_type: data.inquiryType
       });
 
-      const { data: submitData, error: submitError } = await supabase.rpc('submit_contact_form', {
-        p_full_name: data.fullName.trim(),
-        p_email: data.email.trim().toLowerCase(),
-        p_inquiry_type: data.inquiryType,
-        p_organization: data.organization?.trim() || '',
-        p_message: data.message.trim(),
-      });
+      // Use InsForge client
+      const { data: submitData, error: submitError } = await db
+        .from('contact_submissions')
+        .insert({
+          full_name: data.fullName.trim(),
+          email: data.email.trim().toLowerCase(),
+          inquiry_type: data.inquiryType,
+          organization: data.organization?.trim() || '',
+          message: data.message.trim(),
+          status: 'new'
+        })
+        .select('id')
+        .single();
 
       console.log('📊 [Contact] Submission result:', { data: submitData, error: submitError });
 
@@ -115,7 +121,7 @@ const Contact = () => {
         throw new Error(submitError.message);
       }
 
-      console.log('✅ [Contact] Submission successful! Submission ID:', submitData);
+      console.log('✅ [Contact] Submission successful! Submission ID:', submitData?.id);
 
       setSubmittedEmail(data.email);
       setIsSubmitted(true);
@@ -138,26 +144,26 @@ const Contact = () => {
     <section 
       ref={sectionRef} 
       className="pt-32 pb-24 lg:pb-32 min-h-screen"
-      style={{ backgroundColor: 'var(--background)' }}
+      style={{ backgroundColor: 'hsl(var(--background))' }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
           <p 
             className="font-sans text-sm uppercase tracking-[4px] mb-4"
-            style={{ color: 'var(--primary)' }}
+            style={{ color: 'hsl(var(--primary))' }}
           >
             Get in Touch
           </p>
           <h1 
             className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold mb-6"
-            style={{ color: 'var(--foreground)' }}
+            style={{ color: 'hsl(var(--foreground))' }}
           >
             Contact Us
           </h1>
           <p 
             className="font-sans text-lg max-w-2xl mx-auto leading-relaxed"
-            style={{ color: 'var(--muted-foreground)' }}
+            style={{ color: 'hsl(var(--muted-foreground))' }}
           >
             Have questions about Recommend Her? Interested in partnership opportunities? 
             We'd love to hear from you.
@@ -168,47 +174,47 @@ const Contact = () => {
           {/* Contact Info */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-2xl p-6 shadow-brand border border-navy/5">
-              <h3 style={{ color: "var(--foreground)" }} className="font-serif text-lg font-bold mb-6">
+              <h3 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-lg font-bold mb-6">
                 Contact Information
               </h3>
               
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
-                  <div style={{ backgroundColor: "var(--primary)" }} className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Mail style={{ color: "white" }} size={20} />
+                  <div style={{ backgroundColor: "hsl(var(--primary))" }} className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Mail style={{ color: "hsl(var(--primary-foreground))" }} size={20} />
                   </div>
                   <div>
-                    <p style={{ color: "var(--foreground)" }} className="font-serif text-sm font-semibold">Email</p>
-                    <p style={{ color: "var(--muted-foreground)" }} className="font-sans text-sm">hello@recommendher.org</p>
+                    <p style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-semibold">Email</p>
+                    <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm">hello@recommendher.org</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div style={{ backgroundColor: "var(--primary)" }} className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Phone style={{ color: "white" }} size={20} />
+                  <div style={{ backgroundColor: "hsl(var(--primary))" }} className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Phone style={{ color: "hsl(var(--primary-foreground))" }} size={20} />
                   </div>
                   <div>
-                    <p style={{ color: "var(--foreground)" }} className="font-serif text-sm font-semibold">Phone</p>
-                    <p style={{ color: "var(--muted-foreground)" }} className="font-sans text-sm">+1 (555) 123-4567</p>
+                    <p style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-semibold">Phone</p>
+                    <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm">+1 (555) 123-4567</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div style={{ backgroundColor: "var(--primary)" }} className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MapPin style={{ color: "white" }} size={20} />
+                  <div style={{ backgroundColor: "hsl(var(--primary))" }} className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <MapPin style={{ color: "hsl(var(--primary-foreground))" }} size={20} />
                   </div>
                   <div>
-                    <p style={{ color: "var(--foreground)" }} className="font-serif text-sm font-semibold">Location</p>
-                    <p style={{ color: "var(--muted-foreground)" }} className="font-sans text-sm">New York, NY</p>
+                    <p style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-semibold">Location</p>
+                    <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm">New York, NY</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Partnership CTA */}
-            <div style={{ backgroundColor: "oklch(0.35 0.15 340)" }} className="rounded-2xl p-6">
+            <div style={{ backgroundColor: "hsl(var(--primary))" }} className="rounded-2xl p-6">
               <div style={{ backgroundColor: "rgba(255,255,255,0.1)" }} className="w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Building2 style={{ color: "white" }} size={24} />
+                <Building2 style={{ color: "hsl(var(--primary-foreground))" }} size={24} />
               </div>
               <h3 className="font-serif text-lg font-bold text-white mb-2">
                 Partnership Opportunities
@@ -242,7 +248,7 @@ const Contact = () => {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="bg-white rounded-2xl p-8 sm:p-12 shadow-brand-lg border border-navy/5"
               >
-                <h2 style={{ color: "var(--foreground)" }} className="font-serif text-2xl font-bold mb-8">
+                <h2 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-2xl font-bold mb-8">
                   Send us a Message
                 </h2>
 
@@ -253,11 +259,11 @@ const Contact = () => {
                     name="fullName"
                     render={({ field }) => (
                       <FormItem className="space-y-2">
-                        <FormLabel style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+                        <FormLabel style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                           Full Name *
                         </FormLabel>
                         <div className="relative">
-                          <User style={{ color: "var(--primary)" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
+                          <User style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
                           <FormControl>
                             <Input
                               placeholder="Enter your full name"
@@ -277,11 +283,11 @@ const Contact = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem className="space-y-2">
-                        <FormLabel style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+                        <FormLabel style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                           Email Address *
                         </FormLabel>
                         <div className="relative">
-                          <Mail style={{ color: "var(--primary)" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
+                          <Mail style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
                           <FormControl>
                             <Input
                               type="email"
@@ -302,7 +308,7 @@ const Contact = () => {
                     name="inquiryType"
                     render={({ field }) => (
                       <FormItem className="space-y-2 sm:col-span-2 relative z-30">
-                        <FormLabel style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+                        <FormLabel style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                           Inquiry Type *
                         </FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -330,11 +336,11 @@ const Contact = () => {
                     name="organization"
                     render={({ field }) => (
                       <FormItem className="space-y-2 sm:col-span-2">
-                        <FormLabel style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+                        <FormLabel style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                           Organization (Optional)
                         </FormLabel>
                         <div className="relative">
-                          <Building2 style={{ color: "var(--primary)" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
+                          <Building2 style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
                           <FormControl>
                             <Input
                               placeholder="Your company or organization"
@@ -354,11 +360,11 @@ const Contact = () => {
                     name="message"
                     render={({ field }) => (
                       <FormItem className="space-y-2 sm:col-span-2">
-                        <FormLabel style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+                        <FormLabel style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                           Message *
                         </FormLabel>
                         <div className="relative">
-                          <MessageSquare style={{ color: "var(--primary)" }} className="absolute left-4 top-4" size={18} />
+                          <MessageSquare style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-4" size={18} />
                           <FormControl>
                             <Textarea
                               placeholder="How can we help you?"
@@ -378,7 +384,7 @@ const Contact = () => {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  style={{ backgroundColor: "var(--primary)" }} 
+                  style={{ backgroundColor: "hsl(var(--primary))" }} 
                   className="w-full h-14 hover:opacity-90 text-white font-serif font-semibold
                            rounded-lg transition-all duration-300 hover:shadow-coral
                            disabled:opacity-70 disabled:cursor-not-allowed"
@@ -405,13 +411,13 @@ const Contact = () => {
       <Dialog open={isSubmitted} onOpenChange={setIsSubmitted}>
         <DialogContent className="sm:max-w-md bg-white rounded-2xl">
           <DialogHeader className="text-center">
-            <div style={{ backgroundColor: "var(--primary)" }} className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4">
-              <Check style={{ color: "white" }} size={32} />
+            <div style={{ backgroundColor: "hsl(var(--primary))" }} className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4">
+              <Check style={{ color: "hsl(var(--primary-foreground))" }} size={32} />
             </div>
-            <DialogTitle style={{ color: "var(--foreground)" }} className="font-serif text-2xl font-bold">
+            <DialogTitle style={{ color: "hsl(var(--foreground))" }} className="font-serif text-2xl font-bold">
               Message Sent!
             </DialogTitle>
-            <DialogDescription style={{ color: "var(--muted-foreground)" }} className="font-sans">
+            <DialogDescription style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans">
               Thank you for reaching out. We've received your message at <strong>{submittedEmail}</strong> and will 
               get back to you within 24-48 hours.
             </DialogDescription>
@@ -419,7 +425,7 @@ const Contact = () => {
           <div className="mt-6">
             <Button
               onClick={resetForm}
-              style={{ backgroundColor: "var(--primary)" }} 
+              style={{ backgroundColor: "hsl(var(--primary))" }} 
               className="w-full h-12 hover:opacity-90 text-white font-serif font-semibold
                        rounded-lg transition-all duration-300"
             >

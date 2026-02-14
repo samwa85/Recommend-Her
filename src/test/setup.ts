@@ -23,7 +23,7 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock IntersectionObserver
-(window as any).IntersectionObserver = vi.fn().mockImplementation(() => ({
+(window as { IntersectionObserver?: typeof IntersectionObserver }).IntersectionObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
   observe: vi.fn(),
   takeRecords: vi.fn(() => []),
@@ -31,7 +31,7 @@ Object.defineProperty(window, 'matchMedia', {
 }));
 
 // Mock ResizeObserver
-(window as any).ResizeObserver = vi.fn().mockImplementation(() => ({
+(window as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
   observe: vi.fn(),
   unobserve: vi.fn(),

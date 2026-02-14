@@ -3,7 +3,8 @@
 // ============================================================================
 
 export { AdminLayout } from './AdminLayout';
-export { StatusBadge, getStatusLabel, getStatusColor } from './StatusBadge';
+export { StatusBadge } from './StatusBadge';
+export { getStatusLabel, getStatusColor } from '../lib/status-helpers';
 export { DataTable, type Column, type TableAction } from './DataTable';
 export { FilterBar, type FilterOption } from './FilterBar';
 export { DetailDrawer } from './DetailDrawer';

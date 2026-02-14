@@ -2,19 +2,17 @@
 // SPONSORS PAGE - Detailed Sponsor Management
 // ============================================================================
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Eye,
   CheckCircle,
   XCircle,
   Trash2,
-  FileText,
   Plus,
   FileX,
   Mail,
   Phone,
-  MapPin,
   Building2,
   Globe,
   Filter,
@@ -25,10 +23,10 @@ import {
   RefreshCw,
   Search,
   Briefcase,
-  DollarSign,
   X,
   ExternalLink,
   Archive,
+  DollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -115,19 +113,6 @@ const COMPANY_SIZES = [
   '500+',
 ];
 
-const FOCUS_AREAS = [
-  'Technology',
-  'Marketing',
-  'Operations',
-  'Finance',
-  'HR',
-  'Legal',
-  'Product',
-  'Sales',
-  'Executive',
-  'General',
-];
-
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -184,24 +169,34 @@ export default function SponsorsPage() {
   // DATA FETCHING
   // ============================================================================
   
+  // ============================================================================
+  // DATA FETCHING - Memoized to prevent infinite loops
+  // ============================================================================
+  
+  // Memoize filters to prevent unnecessary re-fetches
+  const memoizedFilters = useMemo(() => ({
+    status: filters.status || undefined,
+    search: filters.search || undefined,
+    industry: filters.industry || undefined,
+    company_size: filters.company_size || undefined,
+    is_recruiter: filters.is_recruiter === 'true' ? true : 
+                  filters.is_recruiter === 'false' ? false : undefined,
+  }), [filters.status, filters.search, filters.industry, filters.company_size, filters.is_recruiter]);
+  
+  // Memoize pagination to prevent unnecessary re-fetches
+  const memoizedPagination = useMemo(() => ({
+    page: pagination.page,
+    perPage: pagination.perPage,
+  }), [pagination.page, pagination.perPage]);
+  
   const { 
     data, 
     isLoading, 
     error, 
     refresh 
   } = useSponsorList({
-    filters: {
-      status: filters.status || undefined,
-      search: filters.search || undefined,
-      industry: filters.industry || undefined,
-      company_size: filters.company_size || undefined,
-      is_recruiter: filters.is_recruiter === 'true' ? true : 
-                    filters.is_recruiter === 'false' ? false : undefined,
-    },
-    pagination: {
-      page: pagination.page,
-      perPage: pagination.perPage,
-    },
+    filters: memoizedFilters,
+    pagination: memoizedPagination,
     autoRefresh: false,
   });
 
@@ -341,7 +336,7 @@ export default function SponsorsPage() {
         error: 'Some updates failed',
       }
     );
-  }, [selectedRows, bulkAction, refresh]);
+  }, [selectedRows, refresh]);
 
   // ============================================================================
   // RENDER HELPERS
@@ -464,48 +459,48 @@ export default function SponsorsPage() {
         {showFilters && (
           <div className="p-4 bg-muted/50 rounded-lg space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <Select value={filters.status} onValueChange={(v) => handleFilterChange('status', v)}>
+              <Select value={filters.status || 'all'} onValueChange={(v) => handleFilterChange('status', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   {Object.entries(SPONSOR_STATUS_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={filters.industry} onValueChange={(v) => handleFilterChange('industry', v)}>
+              <Select value={filters.industry || 'all'} onValueChange={(v) => handleFilterChange('industry', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Industry" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Industries</SelectItem>
+                  <SelectItem value="all">All Industries</SelectItem>
                   {INDUSTRIES.map(ind => (
                     <SelectItem key={ind} value={ind}>{ind}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={filters.company_size} onValueChange={(v) => handleFilterChange('company_size', v)}>
+              <Select value={filters.company_size || 'all'} onValueChange={(v) => handleFilterChange('company_size', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Company Size" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sizes</SelectItem>
+                  <SelectItem value="all">All Sizes</SelectItem>
                   {COMPANY_SIZES.map(size => (
                     <SelectItem key={size} value={size}>{size} employees</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={filters.is_recruiter} onValueChange={(v) => handleFilterChange('is_recruiter', v)}>
+              <Select value={filters.is_recruiter || 'all'} onValueChange={(v) => handleFilterChange('is_recruiter', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="true">Recruiter</SelectItem>
                   <SelectItem value="false">Direct Hire</SelectItem>
                 </SelectContent>
@@ -543,7 +538,7 @@ export default function SponsorsPage() {
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             {Object.entries(filters)
-              .filter(([_, value]) => value)
+              .filter(([, value]) => value)
               .map(([key, value]) => (
                 <Badge
                   key={key}

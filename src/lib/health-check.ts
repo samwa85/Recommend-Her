@@ -203,7 +203,7 @@ export async function runDataIntegrityChecks(): Promise<{
     if (data && data.length > 0) {
       issues.push(`Found ${data.length} talent profiles without matching user profiles`);
     }
-  } catch (err) {
+  } catch {
     issues.push('Could not verify talent profile integrity');
   }
 

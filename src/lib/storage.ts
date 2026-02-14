@@ -195,7 +195,7 @@ export async function listFiles(
   bucket: BucketName,
   prefix?: string,
   limit: number = 100
-): Promise<{ name: string; id: string; updated_at: string; created_at: string; last_accessed_at: string; metadata: Record<string, any> }[]> {
+): Promise<{ name: string; id: string; updated_at: string; created_at: string; last_accessed_at: string; metadata: Record<string, unknown> }[]> {
   try {
     const { data, error } = await supabase.storage
       .from(bucket)

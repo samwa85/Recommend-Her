@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/insforge/client';
 import { INDUSTRIES } from '@/lib/database.types';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -142,7 +142,7 @@ const ForSponsors = () => {
     return () => ctx.revert();
   }, []);
 
-  const updateField = (field: keyof FormData, value: any) => {
+  const updateField = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (error) setError(null);
   };
@@ -172,34 +172,44 @@ const ForSponsors = () => {
     setError(null);
 
     try {
-      console.log('📝 [ForSponsors] Starting submission...', {
+      console.log('📝 [ForSponsors] Starting submission to InsForge...', {
         full_name: formData.fullName,
         email: formData.email,
         org_name: formData.company
       });
 
-      const { data: submitData, error: submitError } = await supabase.rpc('submit_sponsor_profile_anon', {
-        p_full_name: formData.fullName.trim(),
-        p_email: formData.email.trim().toLowerCase(),
-        p_title: formData.title.trim(),
-        p_phone: formData.phone.trim(),
-        p_org_name: formData.company.trim(),
-        p_linkedin_url: formData.linkedin.trim(),
-        p_industry: formData.industry,
-        p_sponsor_type: formData.sponsorType,
-        p_commitment_note: formData.commitmentNote.trim(),
-        p_wants_talent_pool_access: formData.wantsTalentPool,
-        p_wants_onboarding_call: formData.wantsOnboarding,
-      });
+      // Insert into sponsor_profiles table using InsForge
+      // Using column names that match the admin dashboard expectations
+      const { data: sponsorData, error: insertError } = await db
+        .from('sponsor_profiles')
+        .insert({
+          full_name: formData.fullName.trim(),
+          email: formData.email.trim().toLowerCase(),
+          job_title: formData.title.trim() || null,
+          phone: formData.phone.trim() || null,
+          company_name: formData.company.trim(),
+          linkedin_url: formData.linkedin.trim() || null,
+          industry: formData.industry || null,
+          // Map sponsor type to focus_areas
+          focus_areas: formData.sponsorType ? [formData.sponsorType] : [],
+          message: formData.commitmentNote.trim() || null,
+          // InsForge specific fields
+          status: 'pending',
+          gdpr_consent: true,
+          is_recruiter: false,
+          source: 'for-sponsors-page',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('*')
+        .single();
 
-      console.log('📊 [ForSponsors] Submission result:', { data: submitData, error: submitError });
-
-      if (submitError) {
-        console.error('❌ [ForSponsors] Submission error:', submitError);
-        throw new Error(submitError.message);
+      if (insertError) {
+        console.error('❌ [ForSponsors] Insert failed:', insertError);
+        throw new Error(`Failed to submit: ${insertError.message}`);
       }
 
-      console.log('✅ [ForSponsors] Submission successful! Sponsor ID:', submitData);
+      console.log('✅ [ForSponsors] Submission successful! Sponsor ID:', sponsorData?.id);
 
       setSubmittedEmail(formData.email);
       setIsSubmitted(true);
@@ -220,17 +230,17 @@ const ForSponsors = () => {
   };
 
   return (
-    <section ref={sectionRef} style={{ backgroundColor: "var(--background)" }} className="pt-32 pb-24 lg:pb-32 min-h-screen">
+    <section ref={sectionRef} style={{ backgroundColor: "hsl(var(--background))" }} className="pt-32 pb-24 lg:pb-32 min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
-          <p style={{ color: "var(--primary)" }} className="font-serif text-sm uppercase tracking-[4px] mb-4">
+          <p style={{ color: "hsl(var(--primary))" }} className="font-serif text-sm uppercase tracking-[4px] mb-4">
             For Sponsors
           </p>
-          <h1 style={{ color: "var(--foreground)" }} className="font-serif text-4xl sm:text-5xl font-bold mb-6">
+          <h1 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-4xl sm:text-5xl font-bold mb-6">
             Join the Sponsor Network
           </h1>
-          <p style={{ color: "var(--muted-foreground)" }} className="font-sans text-lg max-w-2xl mx-auto">
+          <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-lg max-w-2xl mx-auto">
             Become part of a community of leaders committed to actively sponsoring
             talented women into leadership positions.
           </p>
@@ -247,13 +257,13 @@ const ForSponsors = () => {
               className="bg-white rounded-2xl p-8 shadow-brand border border-navy/5
                        text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-brand-lg"
             >
-              <div style={{ backgroundColor: "var(--primary)" }} className="w-16 h-16 /10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <benefit.icon style={{ color: "var(--primary)" }} className="" size={28} />
+              <div style={{ backgroundColor: "hsl(var(--primary))" }} className="w-16 h-16 /10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <benefit.icon style={{ color: "hsl(var(--primary))" }} className="" size={28} />
               </div>
-              <h3 style={{ color: "var(--foreground)" }} className="font-serif text-xl font-bold mb-3">
+              <h3 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-xl font-bold mb-3">
                 {benefit.title}
               </h3>
-              <p style={{ color: "var(--muted-foreground)" }} className="font-sans text-sm">
+              <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm">
                 {benefit.description}
               </p>
             </div>
@@ -274,18 +284,18 @@ const ForSponsors = () => {
           onSubmit={handleSubmit}
           className="bg-white rounded-2xl p-8 sm:p-12 shadow-brand-lg border border-navy/5 max-w-3xl mx-auto"
         >
-          <h2 style={{ color: "var(--foreground)" }} className="font-serif text-2xl font-bold mb-8 text-center">
+          <h2 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-2xl font-bold mb-8 text-center">
             Sponsor Registration
           </h2>
 
           <div className="grid sm:grid-cols-2 gap-6 mb-6">
             {/* Full Name */}
             <div className="space-y-2">
-              <Label htmlFor="fullName" style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+              <Label htmlFor="fullName" style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                 Full Name *
               </Label>
               <div className="relative">
-                <User style={{ color: "var(--primary)" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
+                <User style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
                 <Input
                   id="fullName"
                   placeholder="Enter your full name"
@@ -299,11 +309,11 @@ const ForSponsors = () => {
 
             {/* Title */}
             <div className="space-y-2">
-              <Label htmlFor="title" style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+              <Label htmlFor="title" style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                 Your Title *
               </Label>
               <div className="relative">
-                <Award style={{ color: "var(--primary)" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
+                <Award style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
                 <Input
                   id="title"
                   placeholder="e.g., VP of Engineering"
@@ -317,11 +327,11 @@ const ForSponsors = () => {
 
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+              <Label htmlFor="email" style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                 Work Email *
               </Label>
               <div className="relative">
-                <Mail style={{ color: "var(--primary)" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
+                <Mail style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
                 <Input
                   id="email"
                   type="email"
@@ -336,11 +346,11 @@ const ForSponsors = () => {
 
             {/* Phone */}
             <div className="space-y-2">
-              <Label htmlFor="phone" style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+              <Label htmlFor="phone" style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                 Phone Number
               </Label>
               <div className="relative">
-                <Phone style={{ color: "var(--primary)" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
+                <Phone style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
                 <Input
                   id="phone"
                   type="tel"
@@ -355,11 +365,11 @@ const ForSponsors = () => {
 
             {/* Company */}
             <div className="space-y-2">
-              <Label htmlFor="company" style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+              <Label htmlFor="company" style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                 Company Name *
               </Label>
               <div className="relative">
-                <Building2 style={{ color: "var(--primary)" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
+                <Building2 style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
                 <Input
                   id="company"
                   placeholder="Your company name"
@@ -373,11 +383,11 @@ const ForSponsors = () => {
 
             {/* LinkedIn */}
             <div className="space-y-2">
-              <Label htmlFor="linkedin" style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+              <Label htmlFor="linkedin" style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                 LinkedIn URL
               </Label>
               <div className="relative">
-                <Linkedin style={{ color: "var(--primary)" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
+                <Linkedin style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2" size={18} />
                 <Input
                   id="linkedin"
                   type="url"
@@ -392,7 +402,7 @@ const ForSponsors = () => {
 
             {/* Industry */}
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="industry" style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+              <Label htmlFor="industry" style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                 Industry/Area of Expertise *
               </Label>
               <Select value={formData.industry} onValueChange={(value) => updateField('industry', value)}>
@@ -412,7 +422,7 @@ const ForSponsors = () => {
 
             {/* Sponsor Type */}
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="sponsorType" style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+              <Label htmlFor="sponsorType" style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                 How would you like to sponsor? *
               </Label>
               <Select value={formData.sponsorType} onValueChange={(value) => updateField('sponsorType', value)}>
@@ -432,7 +442,7 @@ const ForSponsors = () => {
 
             {/* Commitment Note */}
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="commitmentNote" style={{ color: "var(--foreground)" }} className="font-serif text-sm font-medium">
+              <Label htmlFor="commitmentNote" style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-medium">
                 Why do you want to join? (Optional)
               </Label>
               <textarea
@@ -448,11 +458,11 @@ const ForSponsors = () => {
           </div>
 
           {/* Sponsor Pledge */}
-          <div style={{ backgroundColor: "oklch(0.35 0.15 340)" }} className="rounded-xl p-6 mb-8">
-            <h4 style={{ color: "var(--foreground)" }} className="font-serif text-sm font-semibold mb-3">
+          <div style={{ backgroundColor: "hsl(var(--primary))" }} className="rounded-xl p-6 mb-8">
+            <h4 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-semibold mb-3">
               The Sponsor Pledge
             </h4>
-            <p style={{ color: "var(--muted-foreground)" }} className="font-sans text-sm mb-4">
+            <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm mb-4">
               "I pledge to actively recommend women from the Recommend Her talent pool 
               when opportunities arise in my network."
             </p>
@@ -463,7 +473,7 @@ const ForSponsors = () => {
                 onChange={(e) => updateField('agreedToPledge', e.target.checked)}
                 className="mt-1 w-5 h-5 rounded border-navy/30 text-primary focus:ring-coral/20"
               />
-              <span style={{ color: "var(--foreground)" }} className="font-sans text-sm">
+              <span style={{ color: "hsl(var(--foreground))" }} className="font-sans text-sm">
                 I pledge to be an active sponsor and advocate for women in leadership. *
               </span>
             </label>
@@ -477,7 +487,7 @@ const ForSponsors = () => {
               onChange={(e) => updateField('wantsTalentPool', e.target.checked)}
               className="mt-1 w-5 h-5 rounded border-navy/30 text-primary focus:ring-coral/20"
             />
-            <span style={{ color: "var(--foreground)" }} className="font-sans text-sm">
+            <span style={{ color: "hsl(var(--foreground))" }} className="font-sans text-sm">
               I'd like access to the Talent Pool gallery.
             </span>
           </div>
@@ -491,7 +501,7 @@ const ForSponsors = () => {
               className="mt-1 w-5 h-5 rounded border-navy/30 text-primary focus:ring-coral/20"
             />
             <div>
-              <span style={{ color: "var(--foreground)" }} className="font-sans text-sm">
+              <span style={{ color: "hsl(var(--foreground))" }} className="font-sans text-sm">
                 I'd like to schedule a 15-minute onboarding call.
               </span>
               {formData.wantsOnboarding && (
@@ -499,7 +509,7 @@ const ForSponsors = () => {
                   href="https://calendly.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: "var(--primary)" }} className="flex items-center gap-2 mt-2 font-serif text-sm font-semibold
+                  style={{ color: "hsl(var(--primary))" }} className="flex items-center gap-2 mt-2 font-serif text-sm font-semibold
                            hover:opacity-80 transition-colors"
                 >
                   <Calendar size={16} />
@@ -513,7 +523,7 @@ const ForSponsors = () => {
           <Button
             type="submit"
             disabled={isSubmitting}
-            style={{ backgroundColor: "oklch(0.35 0.15 340)" }} 
+            style={{ backgroundColor: "hsl(var(--primary))" }} 
             className="w-full h-14 bg-navy hover:opacity-90 text-white font-serif font-semibold
                      rounded-lg transition-all duration-300 hover:shadow-brand
                      disabled:opacity-70 disabled:cursor-not-allowed"
@@ -534,13 +544,13 @@ const ForSponsors = () => {
       <Dialog open={isSubmitted} onOpenChange={setIsSubmitted}>
         <DialogContent className="sm:max-w-md bg-white rounded-2xl">
           <DialogHeader className="text-center">
-            <div style={{ backgroundColor: "oklch(0.35 0.15 340)" }} className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4">
-              <Check style={{ color: "white" }} size={32} />
+            <div style={{ backgroundColor: "hsl(var(--primary))" }} className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4">
+              <Check style={{ color: "hsl(var(--primary-foreground))" }} size={32} />
             </div>
-            <DialogTitle style={{ color: "var(--foreground)" }} className="font-serif text-2xl font-bold">
+            <DialogTitle style={{ color: "hsl(var(--foreground))" }} className="font-serif text-2xl font-bold">
               Welcome to the Network!
             </DialogTitle>
-            <DialogDescription style={{ color: "var(--muted-foreground)" }} className="font-sans">
+            <DialogDescription style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans">
               Thank you for joining our sponsor network. We've received your application 
               and will review it shortly. You'll hear from us at <strong>{submittedEmail}</strong>.
             </DialogDescription>
@@ -548,7 +558,7 @@ const ForSponsors = () => {
           <div className="mt-6">
             <Button
               onClick={resetForm}
-              style={{ backgroundColor: "oklch(0.35 0.15 340)" }} 
+              style={{ backgroundColor: "hsl(var(--primary))" }} 
               className="w-full h-12 bg-navy hover:opacity-90 text-white font-serif font-semibold
                        rounded-lg transition-all duration-300"
             >

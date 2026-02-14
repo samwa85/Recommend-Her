@@ -71,6 +71,7 @@ export function useRobustQuery<T>(
   refetch: () => Promise<void>;
   invalidate: () => void;
 } {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const config = { ...DEFAULT_OPTIONS, ...options } as Required<QueryOptions<T>>;
   const cacheKey = config.cacheKey || queryFn.toString();
   

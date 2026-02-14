@@ -201,16 +201,16 @@ const TalentPool = () => {
 
   if (!isAuthenticated) {
     return (
-      <section ref={sectionRef} style={{ backgroundColor: "var(--background)" }} className="pt-32 pb-24 lg:pb-32  min-h-screen">
+      <section ref={sectionRef} style={{ backgroundColor: "hsl(var(--background))" }} className="pt-32 pb-24 lg:pb-32  min-h-screen">
         <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <div style={{ backgroundColor: "oklch(0.35 0.15 340)" }} className="w-20 h-20 /10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Lock style={{ color: "var(--foreground)" }} className="" size={32} />
+            <div style={{ backgroundColor: "hsl(var(--primary))" }} className="w-20 h-20 /10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Lock style={{ color: "hsl(var(--foreground))" }} className="" size={32} />
             </div>
-            <h1 style={{ color: "var(--foreground)" }} className="font-serif text-3xl font-bold  mb-4">
+            <h1 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-3xl font-bold  mb-4">
               Talent Pool Access
             </h1>
-            <p style={{ color: "var(--muted-foreground)" }} className="font-sans ">
+            <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans ">
               This area is password-protected and reserved for verified sponsors.
               Please enter the access code to view our talent directory.
             </p>
@@ -233,7 +233,7 @@ const TalentPool = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{ color: "var(--foreground)" }} className="absolute right-4 top-1/2 -translate-y-1/2  hover:
+                  style={{ color: "hsl(var(--foreground))" }} className="absolute right-4 top-1/2 -translate-y-1/2  hover:
                            transition-colors duration-200"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -249,7 +249,7 @@ const TalentPool = () => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                style={{ backgroundColor: "oklch(0.35 0.15 340)" }} className="w-full h-14 bg-navy hover:/90 text-white font-serif font-semibold
+                style={{ backgroundColor: "hsl(var(--primary))" }} className="w-full h-14 bg-navy hover:/90 text-white font-serif font-semibold
                          rounded-lg transition-all duration-300 hover:shadow-brand disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Authenticating...' : 'Access Talent Pool'}
@@ -257,11 +257,11 @@ const TalentPool = () => {
             </div>
 
             <div className="mt-6 pt-6 border-t border-navy/10 text-center">
-              <p style={{ color: "var(--foreground)" }} className="font-sans text-sm /60">
+              <p style={{ color: "hsl(var(--foreground))" }} className="font-sans text-sm /60">
                 Don't have access?{' '}
                 <Link
                   to="/for-sponsors"
-                  style={{ color: "var(--foreground)" }} className=" hover: transition-colors duration-200"
+                  style={{ color: "hsl(var(--foreground))" }} className=" hover: transition-colors duration-200"
                 >
                   Apply to become a sponsor
                 </Link>
@@ -274,26 +274,26 @@ const TalentPool = () => {
   }
 
   return (
-    <section ref={sectionRef} style={{ backgroundColor: "var(--background)" }} className="pt-32 pb-24 lg:pb-32  min-h-screen">
+    <section ref={sectionRef} style={{ backgroundColor: "hsl(var(--background))" }} className="pt-32 pb-24 lg:pb-32  min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between mb-12">
           <div>
-            <p style={{ color: "var(--primary)" }} className="font-serif text-sm uppercase tracking-[4px]  mb-4">
+            <p style={{ color: "hsl(var(--primary))" }} className="font-serif text-sm uppercase tracking-[4px]  mb-4">
               Verified Sponsors Only
             </p>
-            <h1 style={{ color: "var(--foreground)" }} className="font-serif text-4xl sm:text-5xl font-bold  mb-4">
+            <h1 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-4xl sm:text-5xl font-bold  mb-4">
               Talent Directory
             </h1>
-            <p style={{ color: "var(--muted-foreground)" }} className="font-sans text-lg  max-w-xl">
+            <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-lg  max-w-xl">
               Browse our curated pool of exceptional women ready for their next
               leadership opportunity. Profiles are anonymized to prevent bias.
             </p>
           </div>
           <div className="mt-6 lg:mt-0">
-            <span style={{ backgroundColor: "var(--primary)" }} className="inline-flex items-center gap-2 px-4 py-2 /10 rounded-full">
+            <span style={{ backgroundColor: "hsl(var(--primary))" }} className="inline-flex items-center gap-2 px-4 py-2 /10 rounded-full">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span style={{ color: "var(--foreground)" }} className="font-serif text-sm ">
+              <span style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm ">
                 {allTalents.length} talents available
               </span>
             </span>
@@ -303,7 +303,7 @@ const TalentPool = () => {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <div className="relative flex-1">
-            <Search style={{ color: "var(--primary)" }} className="absolute left-4 top-1/2 -translate-y-1/2 " size={20} />
+            <Search style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2 " size={20} />
             <Input
               type="text"
               placeholder="Search by title, expertise, or achievements..."
@@ -314,7 +314,7 @@ const TalentPool = () => {
             />
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
-            <Filter style={{ color: "var(--primary)" }} className=" flex-shrink-0" size={20} />
+            <Filter style={{ color: "hsl(var(--primary))" }} className=" flex-shrink-0" size={20} />
             {industries.map((industry) => (
               <button
                 key={industry}
@@ -368,14 +368,14 @@ const TalentPool = () => {
                   {talent.tags.slice(0, 2).map((tag) => (
                     <span
                       key={tag}
-                      style={{ color: "var(--primary)" }} className="px-3 py-1 /10  text-xs font-serif 
+                      style={{ color: "hsl(var(--primary))" }} className="px-3 py-1 /10  text-xs font-serif 
                                font-medium rounded-full"
                     >
                       {tag}
                     </span>
                   ))}
                   {talent.tags.length > 2 && (
-                    <span style={{ color: "var(--foreground)" }} className="px-3 py-1 /10  text-xs font-serif 
+                    <span style={{ color: "hsl(var(--foreground))" }} className="px-3 py-1 /10  text-xs font-serif 
                                    font-medium rounded-full">
                       +{talent.tags.length - 2}
                     </span>
@@ -383,16 +383,16 @@ const TalentPool = () => {
                 </div>
 
                 {/* Expertise */}
-                <p style={{ color: "var(--foreground)" }} className="font-sans text-sm /60 line-clamp-2 mb-4">
+                <p style={{ color: "hsl(var(--foreground))" }} className="font-sans text-sm /60 line-clamp-2 mb-4">
                   {talent.expertise}
                 </p>
 
                 {/* Key Achievements */}
                 <div className="mb-4">
-                  <p style={{ color: "var(--foreground)" }} className="font-serif text-xs font-semibold  mb-2">Key Achievements:</p>
+                  <p style={{ color: "hsl(var(--foreground))" }} className="font-serif text-xs font-semibold  mb-2">Key Achievements:</p>
                   <ul className="space-y-1">
                     {talent.achievements.slice(0, 2).map((achievement, i) => (
-                      <li key={i} style={{ color: "var(--foreground)" }} className="font-sans text-xs /50 line-clamp-1">
+                      <li key={i} style={{ color: "hsl(var(--foreground))" }} className="font-sans text-xs /50 line-clamp-1">
                         • {achievement}
                       </li>
                     ))}
@@ -400,7 +400,7 @@ const TalentPool = () => {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span style={{ color: "var(--foreground)" }} className="font-serif text-xs /40">
+                  <span style={{ color: "hsl(var(--foreground))" }} className="font-serif text-xs /40">
                     {talent.experience} exp
                   </span>
                   <button
@@ -408,7 +408,7 @@ const TalentPool = () => {
                       e.stopPropagation();
                       handleRequestIntroduction(talent);
                     }}
-                    style={{ color: "var(--foreground)" }} className="inline-flex items-center gap-1  font-serif text-sm font-semibold
+                    style={{ color: "hsl(var(--foreground))" }} className="inline-flex items-center gap-1  font-serif text-sm font-semibold
                              transition-all duration-300 group-hover:"
                   >
                     Request Intro
@@ -428,7 +428,7 @@ const TalentPool = () => {
         {/* Empty State */}
         {filteredTalents.length === 0 && (
           <div className="text-center py-16">
-            <p style={{ color: "var(--foreground)" }} className="font-sans text-lg /60">
+            <p style={{ color: "hsl(var(--foreground))" }} className="font-sans text-lg /60">
               No talents found matching your criteria.
             </p>
             <button
@@ -436,7 +436,7 @@ const TalentPool = () => {
                 setSearchQuery('');
                 setSelectedIndustry('All');
               }}
-              style={{ color: "var(--foreground)" }} className="mt-4  hover: font-serif font-semibold
+              style={{ color: "hsl(var(--foreground))" }} className="mt-4  hover: font-serif font-semibold
                        transition-colors duration-200"
             >
               Clear filters
@@ -449,23 +449,23 @@ const TalentPool = () => {
       <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
         <DialogContent className="sm:max-w-md bg-white rounded-2xl">
           <DialogHeader>
-            <DialogTitle style={{ color: "var(--foreground)" }} className="font-serif text-2xl font-bold ">
+            <DialogTitle style={{ color: "hsl(var(--foreground))" }} className="font-serif text-2xl font-bold ">
               Request Introduction
             </DialogTitle>
-            <DialogDescription style={{ color: "var(--muted-foreground)" }} className="font-sans ">
+            <DialogDescription style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans ">
               We'll connect you with this talent to discuss potential opportunities.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-6 space-y-4">
-            <div style={{ backgroundColor: "var(--background)" }} className="flex items-center gap-4 p-4  rounded-xl">
-              <div style={{ backgroundColor: "oklch(0.35 0.15 340)" }} className="w-16 h-16 /10 rounded-full flex items-center justify-center">
-                <User size={24} style={{ color: "var(--foreground)" }} className="/40" />
+            <div style={{ backgroundColor: "hsl(var(--background))" }} className="flex items-center gap-4 p-4  rounded-xl">
+              <div style={{ backgroundColor: "hsl(var(--primary))" }} className="w-16 h-16 /10 rounded-full flex items-center justify-center">
+                <User size={24} style={{ color: "hsl(var(--foreground))" }} className="/40" />
               </div>
               <div>
-                <h4 style={{ color: "var(--foreground)" }} className="font-serif text-lg font-bold ">
+                <h4 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-lg font-bold ">
                   {selectedTalent?.title}
                 </h4>
-                <p style={{ color: "var(--foreground)" }} className="font-sans text-sm /60">
+                <p style={{ color: "hsl(var(--foreground))" }} className="font-sans text-sm /60">
                   {selectedTalent?.industry} • {selectedTalent?.experience}
                 </p>
               </div>
@@ -475,7 +475,7 @@ const TalentPool = () => {
                 setRequestDialogOpen(false);
                 alert('Introduction request sent! Our team will be in touch.');
               }}
-              style={{ backgroundColor: "var(--primary)" }} className="w-full h-12  hover:bg-[#e55a5a] text-white font-serif font-semibold
+              style={{ backgroundColor: "hsl(var(--primary))" }} className="w-full h-12  hover:bg-[#e55a5a] text-white font-serif font-semibold
                        rounded-lg transition-all duration-300"
             >
               Send Request

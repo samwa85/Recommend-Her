@@ -2,8 +2,8 @@
 // REQUESTS PAGE - Detailed Request Management
 // ============================================================================
 
-import { useState, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Eye,
   CheckCircle,
@@ -21,7 +21,6 @@ import {
   RefreshCw,
   Search,
   X,
-  Archive,
   Clock,
   UserCheck,
 } from 'lucide-react';
@@ -68,9 +67,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
 import { AdminLayout } from '../components/AdminLayout';
 import { SkeletonTable } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
@@ -128,7 +125,6 @@ const getPriorityIcon = (priority: string) => {
 // ============================================================================
 
 export default function RequestsPage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
   // ============================================================================
@@ -137,10 +133,6 @@ export default function RequestsPage() {
   
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  
-  // Selection state
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [selectAll, setSelectAll] = useState(false);
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -177,22 +169,32 @@ export default function RequestsPage() {
   // DATA FETCHING
   // ============================================================================
   
+  // ============================================================================
+  // DATA FETCHING - Memoized to prevent infinite loops
+  // ============================================================================
+  
+  // Memoize filters to prevent unnecessary re-fetches
+  const memoizedFilters = useMemo(() => ({
+    status: filters.status || undefined,
+    search: filters.search || undefined,
+    priority: filters.priority || undefined,
+    request_type: filters.request_type || undefined,
+  }), [filters.status, filters.search, filters.priority, filters.request_type]);
+  
+  // Memoize pagination to prevent unnecessary re-fetches
+  const memoizedPagination = useMemo(() => ({
+    page: pagination.page,
+    perPage: pagination.perPage,
+  }), [pagination.page, pagination.perPage]);
+  
   const { 
     data, 
     isLoading, 
     error, 
     refresh 
   } = useRequestList({
-    filters: {
-      status: filters.status || undefined,
-      search: filters.search || undefined,
-      priority: filters.priority || undefined,
-      request_type: filters.request_type || undefined,
-    },
-    pagination: {
-      page: pagination.page,
-      perPage: pagination.perPage,
-    },
+    filters: memoizedFilters,
+    pagination: memoizedPagination,
     autoRefresh: false,
   });
 
@@ -207,8 +209,6 @@ export default function RequestsPage() {
   
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
   
-  const hasSelectedRows = selectedRows.size > 0;
-
   // ============================================================================
   // HANDLERS
   // ============================================================================
@@ -245,34 +245,13 @@ export default function RequestsPage() {
     }));
   }, []);
 
-  const handleRowSelect = useCallback((id: string) => {
-    setSelectedRows(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  }, []);
-
-  const handleSelectAll = useCallback(() => {
-    if (selectAll) {
-      setSelectedRows(new Set());
-    } else {
-      setSelectedRows(new Set(data.data.map(r => r.id)));
-    }
-    setSelectAll(!selectAll);
-  }, [selectAll, data.data]);
-
   const handleViewDetail = useCallback((request: Request) => {
     setSelectedRequestId(request.id);
     setAdminNotes(request.admin_notes || '');
     setDetailOpen(true);
   }, []);
 
-  const handleStatusChange = useCallback(async (request: Request, status: RequestStatus) => {
+  const handleStatusChange = useCallback(async (status: RequestStatus) => {
     toast.promise(
       async () => {
         const result = await updateStatus(status);
@@ -314,7 +293,7 @@ export default function RequestsPage() {
     );
   };
 
-  const getRequesterInfo = (request: any) => {
+  const getRequesterInfo = (request: Request & { talent?: { full_name: string; email: string } | null; sponsor?: { full_name: string; email: string; company_name?: string } | null }) => {
     const talent = request.talent;
     const sponsor = request.sponsor;
     
@@ -419,36 +398,36 @@ export default function RequestsPage() {
         {showFilters && (
           <div className="p-4 bg-muted/50 rounded-lg space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <Select value={filters.status} onValueChange={(v) => handleFilterChange('status', v)}>
+              <Select value={filters.status || 'all'} onValueChange={(v) => handleFilterChange('status', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   {Object.entries(REQUEST_STATUS_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={filters.priority} onValueChange={(v) => handleFilterChange('priority', v)}>
+              <Select value={filters.priority || 'all'} onValueChange={(v) => handleFilterChange('priority', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Priorities</SelectItem>
+                  <SelectItem value="all">All Priorities</SelectItem>
                   {Object.entries(REQUEST_PRIORITY_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={filters.request_type} onValueChange={(v) => handleFilterChange('request_type', v)}>
+              <Select value={filters.request_type || 'all'} onValueChange={(v) => handleFilterChange('request_type', v === 'all' ? '' : v)}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Request Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   {REQUEST_TYPES.map(type => (
                     <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                   ))}
@@ -487,7 +466,7 @@ export default function RequestsPage() {
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             {Object.entries(filters)
-              .filter(([_, value]) => value)
+              .filter(([, value]) => value)
               .map(([key, value]) => (
                 <Badge
                   key={key}
@@ -654,14 +633,14 @@ export default function RequestsPage() {
                             <DropdownMenuSeparator />
                             
                             {request.status !== 'approved' && request.status !== 'closed' && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(request, RequestStatus.APPROVED)}>
+                              <DropdownMenuItem onClick={() => handleStatusChange(RequestStatus.APPROVED)}>
                                 <CheckCircle className="w-4 h-4 mr-2" />
                                 Approve
                               </DropdownMenuItem>
                             )}
                             
                             {request.status !== 'closed' && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(request, RequestStatus.CLOSED)}>
+                              <DropdownMenuItem onClick={() => handleStatusChange(RequestStatus.CLOSED)}>
                                 <XCircle className="w-4 h-4 mr-2" />
                                 Close
                               </DropdownMenuItem>
@@ -753,7 +732,7 @@ export default function RequestsPage() {
                   {selectedRequest.status !== 'approved' && selectedRequest.status !== 'closed' && (
                     <Button
                       size="sm"
-                      onClick={() => handleStatusChange(selectedRequest, RequestStatus.APPROVED)}
+                      onClick={() => handleStatusChange(RequestStatus.APPROVED)}
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Approve
@@ -763,7 +742,7 @@ export default function RequestsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleStatusChange(selectedRequest, RequestStatus.CLOSED)}
+                      onClick={() => handleStatusChange(RequestStatus.CLOSED)}
                     >
                       <XCircle className="w-4 h-4 mr-2" />
                       Close

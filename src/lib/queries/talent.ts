@@ -2,7 +2,7 @@
 // TALENT QUERIES - Single Source of Truth for Talent Operations
 // ============================================================================
 
-import { supabase } from '../supabase/client';
+import { db } from '../insforge/client';
 import type { TalentProfile, TalentProfileInput, TalentProfileUpdate, TalentFilters } from '../types/db';
 import type { PaginatedResult, PaginationParams, QueryResult, ListResult } from '../utils/errors';
 import { TalentStatus } from '../types/enums';
@@ -42,7 +42,7 @@ export async function listTalent(
   const sortOrder = pagination.sortOrder ?? 'desc';
   
   try {
-    let query = supabase
+    let query = db
       .from('talent_profiles')
       .select(withCV ? '*, cv_file:files(*)' : '*', { count: 'exact' });
     
@@ -146,7 +146,7 @@ export async function getAllTalent(
   filters?: Omit<TalentFilters, 'search'>
 ): Promise<ListResult<TalentProfile>> {
   try {
-    let query = supabase.from('talent_profiles').select('*');
+    let query = db.from('talent_profiles').select('*');
     
     if (filters?.status) {
       query = query.eq('status', filters.status);
@@ -179,7 +179,7 @@ export async function getTalentById(
   id: string
 ): Promise<QueryResult<TalentProfile>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('talent_profiles')
       .select('*, cv_file:files(*)')
       .eq('id', id)
@@ -202,7 +202,7 @@ export async function getTalentByEmail(
   email: string
 ): Promise<QueryResult<TalentProfile>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('talent_profiles')
       .select('*')
       .eq('email', email)
@@ -229,7 +229,7 @@ export async function createTalent(
   input: TalentProfileInput
 ): Promise<QueryResult<TalentProfile>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('talent_profiles')
       .insert(input)
       .select()
@@ -254,7 +254,7 @@ export async function updateTalent(
   updates: TalentProfileUpdate
 ): Promise<QueryResult<TalentProfile>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('talent_profiles')
       .update(updates)
       .eq('id', id)
@@ -343,7 +343,7 @@ export async function deleteTalent(
   id: string
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    const { error } = await supabase
+    const { error } = await db
       .from('talent_profiles')
       .delete()
       .eq('id', id);
@@ -371,7 +371,7 @@ export async function getTalentStatusCounts(): Promise<
   QueryResult<Array<{ status: string; count: number }>>
 > {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('talent_profiles')
       .select('status');
 
@@ -400,7 +400,7 @@ export async function getTalentStatusCounts(): Promise<
  */
 export async function getPendingTalentCount(): Promise<number> {
   try {
-    const { count, error } = await supabase
+    const { count, error } = await db
       .from('talent_profiles')
       .select('*', { count: 'exact', head: true })
       .eq('status', TalentStatus.PENDING);
@@ -421,7 +421,7 @@ export async function getPendingTalentCount(): Promise<number> {
 export async function getNewTalentCount(days: number = 7): Promise<number> {
   try {
     const since = subDays(new Date(), days).toISOString();
-    const { count, error } = await supabase
+    const { count, error } = await db
       .from('talent_profiles')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', since);
@@ -443,7 +443,7 @@ export async function getRecentTalent(
   limit: number = 10
 ): Promise<ListResult<TalentProfile>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('talent_profiles')
       .select('*')
       .order('created_at', { ascending: false })

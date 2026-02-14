@@ -29,7 +29,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/lib/supabase';
+import { db, uploadFileAuto } from '@/lib/insforge/client';
 import { BUCKETS, formatFileSize, getAcceptedFileTypes, validateFile } from '@/lib/storage';
 import { INDUSTRIES, SENIORITY_LEVELS, FUNCTIONS } from '@/lib/database.types';
 import { cn } from '@/lib/utils';
@@ -147,23 +147,24 @@ const ForTalent = () => {
   }, []);
 
   // Field validation
-  const validateField = useCallback((field: keyof FormData, value: any): string => {
+  const validateField = useCallback((field: keyof FormData, value: unknown): string => {
+    const strValue = typeof value === 'string' ? value : '';
     switch (field) {
       case 'full_name':
-        if (!value?.trim()) return 'Full name is required';
-        if (value.trim().length < 2) return 'Name must be at least 2 characters';
+        if (!strValue.trim()) return 'Full name is required';
+        if (strValue.trim().length < 2) return 'Name must be at least 2 characters';
         return '';
       case 'email':
-        if (!value?.trim()) return 'Email is required';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Please enter a valid email';
+        if (!strValue.trim()) return 'Email is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(strValue)) return 'Please enter a valid email';
         return '';
       case 'headline':
-        if (!value?.trim()) return 'Headline is required';
-        if (value.length < FIELD_LIMITS.headline.min) return `Headline must be at least ${FIELD_LIMITS.headline.min} characters`;
-        if (value.length > FIELD_LIMITS.headline.max) return `Headline must be less than ${FIELD_LIMITS.headline.max} characters`;
+        if (!strValue.trim()) return 'Headline is required';
+        if (strValue.length < FIELD_LIMITS.headline.min) return `Headline must be at least ${FIELD_LIMITS.headline.min} characters`;
+        if (strValue.length > FIELD_LIMITS.headline.max) return `Headline must be less than ${FIELD_LIMITS.headline.max} characters`;
         return '';
       case 'bio':
-        if (value?.length > FIELD_LIMITS.bio.max) return `Bio must be less than ${FIELD_LIMITS.bio.max} characters`;
+        if (strValue.length > FIELD_LIMITS.bio.max) return `Bio must be less than ${FIELD_LIMITS.bio.max} characters`;
         return '';
       case 'industry':
         if (!value) return 'Industry is required';
@@ -176,7 +177,7 @@ const ForTalent = () => {
     }
   }, []);
 
-  const updateField = (field: keyof FormData, value: any) => {
+  const updateField = (field: keyof FormData, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (touched[field]) {
       setFieldErrors(prev => ({ ...prev, [field]: validateField(field, value) }));
@@ -319,59 +320,71 @@ const ForTalent = () => {
     setError(null);
 
     try {
-      console.log('📝 [ForTalent] Starting submission...', {
+      console.log('📝 [ForTalent] Starting InsForge submission...', {
         full_name: formData.full_name,
         email: formData.email,
         hasCvFile: !!cvFile
       });
 
       let cvFilePath: string | undefined;
+
+      // Upload CV to InsForge Storage if provided
       if (cvFile) {
-        const folderName = `anon-${formData.email.split('@')[0]}-${Date.now()}`;
-        const fileExt = cvFile.name.split('.').pop()?.toLowerCase();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `${folderName}/${fileName}`;
+        console.log('📁 [ForTalent] Uploading CV to InsForge Storage...');
 
-        console.log('📁 [ForTalent] Uploading CV to:', filePath);
+        try {
+          const result = await uploadFileAuto(BUCKETS.TALENT_CV, cvFile);
 
-        const { error: uploadError } = await supabase.storage
-          .from(BUCKETS.TALENT_CV)
-          .upload(filePath, cvFile, { cacheControl: '3600', upsert: false });
-
-        if (uploadError) {
-          console.error('❌ [ForTalent] CV upload failed:', uploadError);
-          throw new Error(`CV upload failed: ${uploadError.message}`);
+          if (result.error) {
+            console.error('❌ [ForTalent] CV upload failed:', result.error);
+            console.warn('⚠️ [ForTalent] Continuing without CV upload');
+          } else {
+            console.log('✅ [ForTalent] CV uploaded successfully:', result.key);
+            cvFilePath = result.key;
+          }
+        } catch (uploadErr) {
+          console.warn('⚠️ [ForTalent] CV upload error (continuing without):', uploadErr);
         }
-        console.log('✅ [ForTalent] CV uploaded successfully');
-        cvFilePath = filePath;
       }
 
-      console.log('🚀 [ForTalent] Calling submit_talent_profile_anon...');
+      console.log('🚀 [ForTalent] Submitting talent profile to InsForge...');
 
-      const { data: submitData, error: submitError } = await supabase.rpc('submit_talent_profile_anon', {
-        p_full_name: formData.full_name.trim(),
-        p_email: formData.email.trim().toLowerCase(),
-        p_headline: formData.headline.trim(),
-        p_bio: formData.bio.trim(),
-        p_years_experience: Math.max(0, Math.min(50, formData.years_experience || 0)),
-        p_industry: formData.industry,
-        p_seniority_level: formData.seniority_level,
-        p_functions: formData.functions,
-        p_skills: formData.skills,
-        p_languages: formData.languages,
-        p_linkedin_url: formData.linkedin_url.trim(),
-        p_portfolio_url: formData.portfolio_url.trim(),
-        p_cv_file_path: cvFilePath,
-      });
+      // Insert into talent_profiles table using InsForge
+      // Using NEW column names added by migration
+      const { data: talentData, error: talentError } = await db
+        .from('talent_profiles')
+        .insert({
+          full_name: formData.full_name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          headline: formData.headline.trim() || null,
+          bio: formData.bio.trim() || null,
+          // Use NEW column names (added by migration)
+          years_of_experience: String(formData.years_experience || 0),
+          industry: formData.industry || null,
+          current_role_title: formData.seniority_level || null,
+          role_category: formData.functions?.[0] || null,
+          seeking_roles: formData.functions || [],
+          skills: formData.skills || [],
+          languages: formData.languages || [],
+          linkedin_url: formData.linkedin_url.trim() || null,
+          website_url: formData.portfolio_url.trim() || null,
+          cv_file_id: cvFilePath || null,
+          // Required fields for InsForge schema
+          status: 'pending',
+          source: 'for-talent-page',
+          gdpr_consent: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('*')
+        .single();
 
-      console.log('📊 [ForTalent] Submission result:', { data: submitData, error: submitError });
-
-      if (submitError) {
-        console.error('❌ [ForTalent] Submission error:', submitError);
-        throw new Error(submitError.message);
+      if (talentError) {
+        console.error('❌ [ForTalent] Talent profile insert failed:', talentError);
+        throw new Error(`Failed to submit profile: ${talentError.message}`);
       }
 
-      console.log('✅ [ForTalent] Submission successful! Talent ID:', submitData);
+      console.log('✅ [ForTalent] Submission successful! Talent ID:', talentData?.id);
 
       setSubmittedEmail(formData.email);
       setIsSubmitted(true);
@@ -380,8 +393,9 @@ const ForTalent = () => {
       localStorage.removeItem(STORAGE_KEY);
       setShowReview(false);
     } catch (err) {
-      console.error('Submission error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to submit profile. Please try again.');
+      console.error('❌ [ForTalent] Submission error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to submit profile. Please try again.';
+      setError(errorMessage);
       setShowReview(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
