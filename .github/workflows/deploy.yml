@@ -37,7 +37,7 @@ jobs:
     - name: Deploy to my20i via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
-        server: ftp.recommendher.africa
+        server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./dist/
