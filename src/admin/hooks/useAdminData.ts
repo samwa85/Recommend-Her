@@ -591,7 +591,7 @@ export function useMessageList(options: UseMessageListOptions = {}) {
 export function useMessageDetail(id: string | null) {
   const [data, setData] = useState<Message | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [replies, setReplies] = useState<Array<{ id: string; reply_text: string; created_at: string; admin_name?: string }>>([]);
+  const [replies, setReplies] = useState<Array<{ id: string; reply_text: string; created_at: string; admin_name?: string | null }>>([]);
 
   useEffect(() => {
     if (!id) {
