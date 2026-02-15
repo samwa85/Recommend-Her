@@ -1,6 +1,9 @@
 # Enable rewrite engine
 RewriteEngine On
 
+# Set base directory for React Router
+RewriteBase /
+
 # Don't rewrite files or directories that exist
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
@@ -8,6 +11,10 @@ RewriteRule ^ - [L]
 
 # Rewrite everything else to index.html
 RewriteRule ^ index.html [L]
+
+# Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Enable CORS for JS modules
 <IfModule mod_headers.c>
