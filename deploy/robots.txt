@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://recommendher.com/sitemap.xml
+
+# Disallow admin routes
+Disallow: /admin
+Disallow: /super-admin
+Disallow: /api/
+
+# Crawl delay for all bots
+Crawl-delay: 10
