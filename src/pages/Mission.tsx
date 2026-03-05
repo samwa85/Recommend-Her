@@ -112,34 +112,28 @@ const Mission = () => {
           <div className="flex flex-col md:flex-row gap-8 items-start">
             <div className="w-full md:w-1/3">
               <div 
-                className="aspect-square rounded-2xl flex items-center justify-center"
+                className="rounded-2xl overflow-hidden p-4"
                 style={{ backgroundColor: 'hsl(var(--primary) / 0.08)' }}
               >
-                <div className="text-center">
-                  <div 
-                    className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4"
-                    style={{ backgroundColor: 'hsl(var(--primary) / 0.15)' }}
-                  >
-                    <span 
-                      className="font-serif text-3xl font-bold"
-                      style={{ color: 'hsl(var(--primary))' }}
-                    >
-                      WM
-                    </span>
-                  </div>
-                  <p 
-                    className="font-serif font-semibold text-lg"
-                    style={{ color: 'hsl(var(--foreground))' }}
-                  >
-                    Wahda Mbaraka
-                  </p>
-                  <p 
-                    className="font-sans text-base"
-                    style={{ color: 'hsl(var(--muted-foreground))' }}
-                  >
-                    Founder
-                  </p>
-                </div>
+                <img 
+                  src="https://aku8v88g.us-east.insforge.app/api/storage/buckets/profile-images/objects/founders%2Fwahida.jpeg"
+                  alt="Wahida Mbaraka - Founder"
+                  className="w-full h-auto rounded-xl"
+                />
+              </div>
+              <div className="text-center mt-4">
+                <p 
+                  className="font-serif font-semibold text-lg"
+                  style={{ color: 'hsl(var(--foreground))' }}
+                >
+                  Wahida Mbaraka
+                </p>
+                <p 
+                  className="font-sans text-base"
+                  style={{ color: 'hsl(var(--muted-foreground))' }}
+                >
+                  Founder
+                </p>
               </div>
             </div>
             <div className="w-full md:w-2/3">
