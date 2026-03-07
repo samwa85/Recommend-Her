@@ -1,36 +1,15 @@
+// ============================================================================
+// TESTIMONIALS SECTION - Fetches from database
+// ============================================================================
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Quote, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getActiveTestimonials } from '@/lib/api/testimonials';
+import type { ActiveTestimonial } from '@/lib/database.types';
 
 gsap.registerPlugin(ScrollTrigger);
-
-const testimonials = [
-  {
-    id: 1,
-    name: 'Dr. Monique Thompson',
-    title: 'VP Engineering at TechCorp',
-    image: '/images/testimonial-1.jpg',
-    quote:
-      "Recommend Her connected me with a sponsor who actively advocated for my promotion. Six months later, I landed my dream role. This platform truly changes lives.",
-  },
-  {
-    id: 2,
-    name: 'Zahra Ibrahim',
-    title: 'Director of Operations',
-    image: '/images/testimonial-2.jpg',
-    quote:
-      "As a sponsor, I've found exceptional talent through this network. It's not just recruiting—it's building the future of leadership and creating lasting impact.",
-  },
-  {
-    id: 3,
-    name: 'Patricia Daniels',
-    title: 'CFO at Global Finance',
-    image: '/images/testimonial-3.jpg',
-    quote:
-      "The quality of candidates in this pool is outstanding. Every introduction has led to meaningful conversations and successful placements. Highly recommended.",
-  },
-];
 
 const Testimonials = () => {
   const sectionRef = useRef<HTMLElement>(null);
@@ -38,7 +17,32 @@ const Testimonials = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  
+  // Database state
+  const [testimonials, setTestimonials] = useState<ActiveTestimonial[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch testimonials from database
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getActiveTestimonials();
+        setTestimonials(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching testimonials:', err);
+        setError('Failed to load testimonials');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
+
+  // GSAP animation
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo(
@@ -83,14 +87,14 @@ const Testimonials = () => {
   }, []);
 
   const goToNext = useCallback(() => {
-    if (isAnimating) return;
+    if (isAnimating || testimonials.length <= 1) return;
     setIsAnimating(true);
     const nextIndex = (activeIndex + 1) % testimonials.length;
     animateTransition(nextIndex);
-  }, [activeIndex, isAnimating, animateTransition]);
+  }, [activeIndex, isAnimating, animateTransition, testimonials.length]);
 
   const goToPrev = () => {
-    if (isAnimating) return;
+    if (isAnimating || testimonials.length <= 1) return;
     setIsAnimating(true);
     const prevIndex =
       (activeIndex - 1 + testimonials.length) % testimonials.length;
@@ -105,6 +109,8 @@ const Testimonials = () => {
 
   // Auto-rotate
   useEffect(() => {
+    if (testimonials.length <= 1) return;
+    
     const interval = setInterval(() => {
       if (!isAnimating) {
         goToNext();
@@ -112,7 +118,45 @@ const Testimonials = () => {
     }, 6000);
 
     return () => clearInterval(interval);
-  }, [activeIndex, isAnimating, goToNext]);
+  }, [activeIndex, isAnimating, goToNext, testimonials.length]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <section 
+        ref={sectionRef} 
+        className="py-24 lg:py-32"
+        style={{ backgroundColor: 'oklch(0.35 0.15 340)' }}
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="animate-pulse">
+            <div className="h-4 w-24 bg-white/20 rounded mx-auto mb-4"></div>
+            <div className="h-10 w-64 bg-white/20 rounded mx-auto"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <section 
+        ref={sectionRef} 
+        className="py-24 lg:py-32"
+        style={{ backgroundColor: 'oklch(0.35 0.15 340)' }}
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white/80">
+          <p>Unable to load testimonials</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Empty state
+  if (testimonials.length === 0) {
+    return null; // Hide section if no testimonials
+  }
 
   const currentTestimonial = testimonials[activeIndex];
 
@@ -166,10 +210,14 @@ const Testimonials = () => {
               {/* Author */}
               <div className="flex items-center gap-4">
                 <img
-                  src={currentTestimonial.image}
+                  src={currentTestimonial.image_url || '/images/testimonial-1.jpg'}
                   alt={currentTestimonial.name}
                   className="w-16 h-16 rounded-full object-cover border-4"
                   style={{ borderColor: 'var(--primary)' }}
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    (e.target as HTMLImageElement).src = '/images/testimonial-1.jpg';
+                  }}
                 />
                 <div>
                   <h4 
@@ -183,6 +231,7 @@ const Testimonials = () => {
                     style={{ color: '#6b7280' }}
                   >
                     {currentTestimonial.title}
+                    {currentTestimonial.company && ` at ${currentTestimonial.company}`}
                   </p>
                 </div>
               </div>
@@ -190,42 +239,44 @@ const Testimonials = () => {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-center gap-4 mt-8">
-            <button
-              onClick={goToPrev}
-              className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center
-                       text-white transition-all duration-300 hover:bg-white/20 hover:scale-110"
-              aria-label="Previous testimonial"
-            >
-              <ChevronLeft size={24} />
-            </button>
+          {testimonials.length > 1 && (
+            <div className="flex items-center justify-center gap-4 mt-8">
+              <button
+                onClick={goToPrev}
+                className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center
+                         text-white transition-all duration-300 hover:bg-white/20 hover:scale-110"
+                aria-label="Previous testimonial"
+              >
+                <ChevronLeft size={24} />
+              </button>
 
-            {/* Dots */}
-            <div className="flex gap-2">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => goToIndex(index)}
-                  className={`h-3 rounded-full transition-all duration-300 ${
-                    index === activeIndex
-                      ? 'w-8'
-                      : 'w-3 bg-white/30 hover:bg-white/50'
-                  }`}
-                  style={{ backgroundColor: index === activeIndex ? 'var(--primary)' : undefined }}
-                  aria-label={`Go to testimonial ${index + 1}`}
-                />
-              ))}
+              {/* Dots */}
+              <div className="flex gap-2">
+                {testimonials.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToIndex(index)}
+                    className={`h-3 rounded-full transition-all duration-300 ${
+                      index === activeIndex
+                        ? 'w-8'
+                        : 'w-3 bg-white/30 hover:bg-white/50'
+                    }`}
+                    style={{ backgroundColor: index === activeIndex ? 'var(--primary)' : undefined }}
+                    aria-label={`Go to testimonial ${index + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={goToNext}
+                className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center
+                         text-white transition-all duration-300 hover:bg-white/20 hover:scale-110"
+                aria-label="Next testimonial"
+              >
+                <ChevronRight size={24} />
+              </button>
             </div>
-
-            <button
-              onClick={goToNext}
-              className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center
-                       text-white transition-all duration-300 hover:bg-white/20 hover:scale-110"
-              aria-label="Next testimonial"
-            >
-              <ChevronRight size={24} />
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </section>

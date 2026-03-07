@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Sun,
   Moon,
+  Quote,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -117,6 +118,7 @@ export function AdminLayout({
       icon: Mail,
       badge: unreadCount > 0 ? unreadCount : undefined,
     },
+    { path: '/admin/testimonials', label: 'Testimonials', icon: Quote },
     { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   ];
 

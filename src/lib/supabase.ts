@@ -18,6 +18,9 @@ import type {
   SponsorStatus,
   RequestStatus,
   OutcomeType,
+  Testimonial,
+  TestimonialInput,
+  ActiveTestimonial,
 } from './database.types';
 
 const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'];
@@ -46,6 +49,9 @@ export type {
   PublicTalentProfile,
   AdminDashboardMetrics,
   RecommendationRequestDetail,
+  Testimonial,
+  TestimonialInput,
+  ActiveTestimonial,
 };
 
 // ============================================================================

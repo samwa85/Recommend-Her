@@ -2,7 +2,7 @@
 // SETTINGS PAGE - Admin settings and configuration
 // ============================================================================
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Settings,
   Bell,
@@ -33,6 +33,7 @@ import { AdminLayout } from '../components/AdminLayout';
 // ============================================================================
 
 export default function SettingsPage() {
+  const STORAGE_KEY = 'admin_settings_v1';
   const [isSaving, setIsSaving] = useState(false);
   
   // Notification settings
@@ -72,13 +73,44 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
+    const payload = {
+      notifications,
+      approvals,
+      display,
+      emailSettings,
+      updatedAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     toast.success('Settings saved successfully');
     setIsSaving(false);
   };
+
+  const handleReset = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    toast.success('Saved settings deleted. Reloading defaults.');
+    window.location.reload();
+  };
+
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as {
+        notifications?: typeof notifications;
+        approvals?: typeof approvals;
+        display?: typeof display;
+        emailSettings?: typeof emailSettings;
+      };
+      if (parsed.notifications) setNotifications(parsed.notifications);
+      if (parsed.approvals) setApprovals(parsed.approvals);
+      if (parsed.display) setDisplay(parsed.display);
+      if (parsed.emailSettings) setEmailSettings(parsed.emailSettings);
+    } catch {
+      // ignore corrupt settings and use defaults
+    }
+  }, []);
 
   const updateNotification = (key: string, value: boolean) => {
     setNotifications(prev => ({ ...prev, [key]: value }));
@@ -101,19 +133,24 @@ export default function SettingsPage() {
       title="Settings"
       subtitle="Manage admin dashboard configuration"
       actions={
-        <Button onClick={handleSave} disabled={isSaving}>
-          {isSaving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Save Changes
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleReset} disabled={isSaving}>
+            Reset Saved
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </>
+            )}
+          </Button>
+        </div>
       }
     >
       <div className="space-y-6 max-w-4xl">

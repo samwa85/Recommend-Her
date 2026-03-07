@@ -72,6 +72,7 @@ import { AdminLayout } from '../components/AdminLayout';
 import { SkeletonTable } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { useMessageList, useMessageDetail } from '../hooks/useAdminData';
+import { createMessage } from '@/lib/queries';
 import { formatDate, formatRelativeTime } from '@/lib/format/date';
 import { MessageStatus, MESSAGE_STATUS_LABELS } from '@/lib/types/enums';
 import type { Message } from '@/lib/types/db';
@@ -128,6 +129,13 @@ export default function MessagesPage() {
   
   // Action dialogs
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
+  const [newMessageForm, setNewMessageForm] = useState({
+    sender_name: '',
+    sender_email: '',
+    subject: 'General Inquiry',
+    message: '',
+  });
 
   // ============================================================================
   // DATA FETCHING
@@ -287,6 +295,50 @@ export default function MessagesPage() {
     );
   }, [selectedMessageId, remove, refresh]);
 
+  const handleCreateMessage = useCallback(async () => {
+    if (!newMessageForm.sender_name.trim()) {
+      toast.error('Sender name is required');
+      return;
+    }
+    if (!newMessageForm.sender_email.trim()) {
+      toast.error('Sender email is required');
+      return;
+    }
+    if (!newMessageForm.message.trim()) {
+      toast.error('Message is required');
+      return;
+    }
+
+    toast.promise(
+      async () => {
+        const result = await createMessage({
+          sender_name: newMessageForm.sender_name.trim(),
+          sender_email: newMessageForm.sender_email.trim().toLowerCase(),
+          sender_phone: null,
+          subject: newMessageForm.subject.trim() || 'General Inquiry',
+          message: newMessageForm.message.trim(),
+          status: MessageStatus.UNREAD,
+        });
+        if (result.error) throw result.error;
+
+        setNewMessageDialogOpen(false);
+        setNewMessageForm({
+          sender_name: '',
+          sender_email: '',
+          subject: 'General Inquiry',
+          message: '',
+        });
+        refresh();
+        return 'Message created';
+      },
+      {
+        loading: 'Creating message...',
+        success: 'Message created successfully',
+        error: 'Failed to create message',
+      }
+    );
+  }, [newMessageForm, refresh]);
+
   // ============================================================================
   // RENDER HELPERS
   // ============================================================================
@@ -312,6 +364,9 @@ export default function MessagesPage() {
       subtitle={`${data.count} total messages • ${unreadCount} unread`}
       actions={
         <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setNewMessageDialogOpen(true)}>
+            New Message
+          </Button>
           <Button variant="outline" size="sm" onClick={refresh}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
@@ -843,6 +898,60 @@ export default function MessagesPage() {
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Message Dialog */}
+      <Dialog open={newMessageDialogOpen} onOpenChange={setNewMessageDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Message</DialogTitle>
+            <DialogDescription>
+              Add a manual message record in admin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Sender Name</label>
+              <Input
+                value={newMessageForm.sender_name}
+                onChange={(e) => setNewMessageForm(prev => ({ ...prev, sender_name: e.target.value }))}
+                placeholder="Full name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Sender Email</label>
+              <Input
+                type="email"
+                value={newMessageForm.sender_email}
+                onChange={(e) => setNewMessageForm(prev => ({ ...prev, sender_email: e.target.value }))}
+                placeholder="name@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Subject</label>
+              <Input
+                value={newMessageForm.subject}
+                onChange={(e) => setNewMessageForm(prev => ({ ...prev, subject: e.target.value }))}
+                placeholder="Message subject"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Message</label>
+              <Textarea
+                value={newMessageForm.message}
+                onChange={(e) => setNewMessageForm(prev => ({ ...prev, message: e.target.value }))}
+                placeholder="Write message..."
+                className="min-h-[120px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewMessageDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateMessage}>Create Message</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

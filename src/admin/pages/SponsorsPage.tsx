@@ -6,6 +6,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Eye,
+  Pencil,
   CheckCircle,
   XCircle,
   Trash2,
@@ -31,6 +32,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import {
   Select,
@@ -77,7 +79,7 @@ import { AdminLayout } from '../components/AdminLayout';
 import { SkeletonTable } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { useSponsorList, useSponsorDetail } from '../hooks/useAdminData';
-import { updateSponsorStatus as updateSponsorStatusQuery, deleteSponsor as deleteSponsorQuery } from '@/lib/queries';
+import { updateSponsorStatus as updateSponsorStatusQuery, deleteSponsor as deleteSponsorQuery, updateSponsor as updateSponsorQuery } from '@/lib/queries';
 import { formatDate, formatRelativeTime } from '@/lib/format/date';
 import { SponsorStatus, SPONSOR_STATUS_LABELS } from '@/lib/types/enums';
 import type { SponsorProfile } from '@/lib/types/db';
@@ -163,8 +165,22 @@ export default function SponsorsPage() {
   
   // Action dialogs
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
   const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | 'archive' | 'delete'>('activate');
+  const [editForm, setEditForm] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    job_title: '',
+    company_name: '',
+    company_website: '',
+    industry: '',
+    company_size: '',
+    sponsorship_amount: '',
+    message: '',
+    internal_notes: '',
+  });
 
   // ============================================================================
   // DATA FETCHING
@@ -318,6 +334,60 @@ export default function SponsorsPage() {
       }
     );
   }, [selectedSponsorId, remove, refresh]);
+
+  const handleOpenEdit = useCallback((sponsor: SponsorProfile) => {
+    setSelectedSponsorId(sponsor.id);
+    setEditForm({
+      full_name: sponsor.full_name || '',
+      email: sponsor.email || '',
+      phone: sponsor.phone || '',
+      job_title: sponsor.job_title || '',
+      company_name: sponsor.company_name || '',
+      company_website: sponsor.company_website || '',
+      industry: sponsor.industry || '',
+      company_size: sponsor.company_size || '',
+      sponsorship_amount: sponsor.sponsorship_amount || '',
+      message: sponsor.message || '',
+      internal_notes: sponsor.internal_notes || '',
+    });
+    setEditDialogOpen(true);
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!selectedSponsorId) return;
+    if (!editForm.full_name.trim() || !editForm.email.trim() || !editForm.company_name.trim()) {
+      toast.error('Name, email, and company are required');
+      return;
+    }
+
+    toast.promise(
+      async () => {
+        const result = await updateSponsorQuery(selectedSponsorId, {
+          full_name: editForm.full_name.trim(),
+          email: editForm.email.trim().toLowerCase(),
+          phone: editForm.phone.trim() || null,
+          job_title: editForm.job_title.trim() || null,
+          company_name: editForm.company_name.trim(),
+          company_website: editForm.company_website.trim() || null,
+          industry: editForm.industry.trim() || null,
+          company_size: editForm.company_size.trim() || null,
+          sponsorship_amount: editForm.sponsorship_amount.trim() || null,
+          message: editForm.message.trim() || null,
+          internal_notes: editForm.internal_notes.trim() || null,
+          updated_at: new Date().toISOString(),
+        });
+        if (result.error) throw result.error;
+        setEditDialogOpen(false);
+        refresh();
+        return 'Sponsor updated';
+      },
+      {
+        loading: 'Saving...',
+        success: 'Sponsor updated successfully',
+        error: 'Failed to update sponsor',
+      }
+    );
+  }, [selectedSponsorId, editForm, refresh]);
 
   const handleBulkAction = useCallback(async () => {
     const ids = Array.from(selectedRows);
@@ -762,6 +832,10 @@ export default function SponsorsPage() {
                             <Eye className="w-4 h-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenEdit(sponsor)}>
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
                           
                           <DropdownMenuSeparator />
                           
@@ -877,6 +951,14 @@ export default function SponsorsPage() {
                       Activate
                     </Button>
                   )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenEdit(selectedSponsor)}
+                  >
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1082,6 +1164,68 @@ export default function SponsorsPage() {
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Sponsor Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Sponsor</DialogTitle>
+            <DialogDescription>
+              Update sponsor profile details.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Full Name</label>
+              <Input value={editForm.full_name} onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
+              <Input type="email" value={editForm.email} onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Phone</label>
+              <Input value={editForm.phone} onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Job Title</label>
+              <Input value={editForm.job_title} onChange={(e) => setEditForm(prev => ({ ...prev, job_title: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Company Name</label>
+              <Input value={editForm.company_name} onChange={(e) => setEditForm(prev => ({ ...prev, company_name: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Company Website</label>
+              <Input value={editForm.company_website} onChange={(e) => setEditForm(prev => ({ ...prev, company_website: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Industry</label>
+              <Input value={editForm.industry} onChange={(e) => setEditForm(prev => ({ ...prev, industry: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Company Size</label>
+              <Input value={editForm.company_size} onChange={(e) => setEditForm(prev => ({ ...prev, company_size: e.target.value }))} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-sm font-medium">Sponsorship Amount</label>
+              <Input value={editForm.sponsorship_amount} onChange={(e) => setEditForm(prev => ({ ...prev, sponsorship_amount: e.target.value }))} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-sm font-medium">Message</label>
+              <Textarea value={editForm.message} onChange={(e) => setEditForm(prev => ({ ...prev, message: e.target.value }))} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-sm font-medium">Internal Notes</label>
+              <Textarea value={editForm.internal_notes} onChange={(e) => setEditForm(prev => ({ ...prev, internal_notes: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveEdit}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

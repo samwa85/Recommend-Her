@@ -678,6 +678,57 @@ export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
 };
 
 // ============================================================================
+// TESTIMONIAL TYPES
+// ============================================================================
+
+/**
+ * Testimonial - Homepage testimonials managed via admin dashboard
+ */
+export interface Testimonial {
+  id: string;
+  name: string;
+  title: string;
+  company: string | null;
+  quote: string;
+  image_path: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  display_order: number;
+  featured: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Testimonial input for creating/updating
+ */
+export interface TestimonialInput {
+  name: string;
+  title: string;
+  company?: string;
+  quote: string;
+  image_path?: string;
+  image_url?: string;
+  is_active?: boolean;
+  display_order?: number;
+  featured?: boolean;
+}
+
+/**
+ * Active testimonial (frontend view)
+ */
+export interface ActiveTestimonial {
+  id: string;
+  name: string;
+  title: string;
+  company: string | null;
+  quote: string;
+  image_url: string | null;
+  featured: boolean;
+  display_order: number;
+}
+
+// ============================================================================
 // LEGACY TYPES (For backwards compatibility)
 // ============================================================================
 

@@ -13,3 +13,4 @@ export { default as AnalyticsPage } from './AnalyticsPage';
 export { default as SettingsPage } from './SettingsPage';
 export { default as LoginPage } from './LoginPage';
 export { default as BlogPage } from './BlogPage';
+export { default as TestimonialsPage } from './TestimonialsPage';

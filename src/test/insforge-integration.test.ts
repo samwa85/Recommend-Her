@@ -344,6 +344,7 @@ describe('InsForge Integration Tests', () => {
 
       expect(created?.id).toBeDefined();
       console.log('   Created record to delete:', created?.id);
+      if (!created?.id) throw new Error('Failed to create test record for delete flow');
 
       // Perform delete
       const { error: deleteError } = await client.database

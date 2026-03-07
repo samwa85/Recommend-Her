@@ -27,6 +27,7 @@ const AnalyticsPage = lazy(() => import('@/admin/pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('@/admin/pages/SettingsPage'));
 const LoginPage = lazy(() => import('@/admin/pages/LoginPage'));
 const BlogPage = lazy(() => import('@/admin/pages/BlogPage'));
+const TestimonialsPage = lazy(() => import('@/admin/pages/TestimonialsPage'));
 
 // Legacy Admin (for backward compatibility)
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
@@ -57,6 +58,7 @@ export const routes: RouteObject[] = [
   { path: '/admin/analytics', element: <AnalyticsPage /> },
   { path: '/admin/settings', element: <SettingsPage /> },
   { path: '/admin/blog', element: <BlogPage /> },
+  { path: '/admin/testimonials', element: <TestimonialsPage /> },
   { path: '/admin/login', element: <LoginPage /> },
 
   // Legacy Admin (for backward compatibility)
@@ -81,5 +83,6 @@ export const adminNavLinks = [
   { path: '/admin/blog', label: 'Blog', icon: 'FileText' },
   { path: '/admin/requests', label: 'Requests', icon: 'MessageSquare' },
   { path: '/admin/messages', label: 'Messages', icon: 'Mail' },
+  { path: '/admin/testimonials', label: 'Testimonials', icon: 'Quote' },
   { path: '/admin/analytics', label: 'Analytics', icon: 'BarChart3' },
 ];

@@ -72,6 +72,7 @@ import { AdminLayout } from '../components/AdminLayout';
 import { SkeletonTable } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { useRequestList, useRequestDetail } from '../hooks/useAdminData';
+import { createRequest, updateRequest } from '@/lib/queries';
 import { formatDate, formatRelativeTime } from '@/lib/format/date';
 import { RequestStatus, RequestPriority, REQUEST_STATUS_LABELS, REQUEST_PRIORITY_LABELS } from '@/lib/types/enums';
 import type { Request } from '@/lib/types/db';
@@ -163,7 +164,17 @@ export default function RequestsPage() {
   
   // Action dialogs
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [newRequestDialogOpen, setNewRequestDialogOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
+  const [newRequestForm, setNewRequestForm] = useState<{
+    request_type: string;
+    description: string;
+    priority: string;
+  }>({
+    request_type: 'general',
+    description: '',
+    priority: RequestPriority.NORMAL,
+  });
   
   // ============================================================================
   // DATA FETCHING
@@ -293,6 +304,42 @@ export default function RequestsPage() {
     );
   }, [selectedRequestId, remove, refresh]);
 
+  const handleCreateRequest = useCallback(async () => {
+    if (!newRequestForm.description.trim()) {
+      toast.error('Description is required');
+      return;
+    }
+
+    toast.promise(
+      async () => {
+        const result = await createRequest({
+          request_type: newRequestForm.request_type,
+          talent_id: null,
+          sponsor_id: null,
+          description: newRequestForm.description.trim(),
+          priority: newRequestForm.priority,
+          status: RequestStatus.OPEN,
+          admin_notes: null,
+        });
+        if (result.error) throw result.error;
+
+        setNewRequestDialogOpen(false);
+        setNewRequestForm({
+          request_type: 'general',
+          description: '',
+          priority: RequestPriority.NORMAL,
+        });
+        refresh();
+        return 'Request created';
+      },
+      {
+        loading: 'Creating request...',
+        success: 'Request created successfully',
+        error: 'Failed to create request',
+      }
+    );
+  }, [newRequestForm, refresh]);
+
   // ============================================================================
   // RENDER HELPERS
   // ============================================================================
@@ -346,6 +393,9 @@ export default function RequestsPage() {
       subtitle={`${data.count} total requests`}
       actions={
         <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setNewRequestDialogOpen(true)}>
+            New Request
+          </Button>
           <Button variant="outline" size="sm" onClick={refresh}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
@@ -842,8 +892,18 @@ export default function RequestsPage() {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => {
+                        onClick={async () => {
+                          if (!selectedRequestId) return;
+                          const result = await updateRequest(selectedRequestId, {
+                            admin_notes: adminNotes.trim() || null,
+                            updated_at: new Date().toISOString(),
+                          });
+                          if (result.error) {
+                            toast.error('Failed to save notes');
+                            return;
+                          }
                           toast.success('Notes saved');
+                          refresh();
                         }}
                       >
                         Save Notes
@@ -896,6 +956,72 @@ export default function RequestsPage() {
             <Button variant="destructive" onClick={handleDelete}>
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Request Dialog */}
+      <Dialog open={newRequestDialogOpen} onOpenChange={setNewRequestDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Request</DialogTitle>
+            <DialogDescription>
+              Create a request manually from admin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Request Type</label>
+              <Select
+                value={newRequestForm.request_type}
+                onValueChange={(value) => setNewRequestForm(prev => ({ ...prev, request_type: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {REQUEST_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Priority</label>
+              <Select
+                value={newRequestForm.priority}
+                onValueChange={(value) => setNewRequestForm(prev => ({ ...prev, priority: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={RequestPriority.LOW}>Low</SelectItem>
+                  <SelectItem value={RequestPriority.NORMAL}>Normal</SelectItem>
+                  <SelectItem value={RequestPriority.HIGH}>High</SelectItem>
+                  <SelectItem value={RequestPriority.URGENT}>Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={newRequestForm.description}
+                onChange={(e) => setNewRequestForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Describe the request..."
+                className="min-h-[120px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewRequestDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateRequest}>
+              Create Request
             </Button>
           </DialogFooter>
         </DialogContent>
