@@ -121,11 +121,11 @@ $$;
 -- Function to add/update sponsor showcase (for admin)
 DROP FUNCTION IF EXISTS public.upsert_sponsor_showcase;
 CREATE OR REPLACE FUNCTION public.upsert_sponsor_showcase(
-    p_id UUID DEFAULT NULL,
     p_name TEXT,
     p_title TEXT,
-    p_company TEXT DEFAULT NULL,
     p_bio TEXT,
+    p_id UUID DEFAULT NULL,
+    p_company TEXT DEFAULT NULL,
     p_image_path TEXT DEFAULT NULL,
     p_image_url TEXT DEFAULT NULL,
     p_linkedin_url TEXT DEFAULT NULL,
