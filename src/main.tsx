@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import * as Sentry from '@sentry/react'
 import './index.css'
 import App from './App.tsx'
+import { AuthProvider } from './lib/auth/AuthContext.tsx'
 
 // Debug logging
 logger.log('[App] Starting app initialization...');
@@ -49,7 +50,9 @@ if (!rootElement) {
 
 createRoot(rootElement!).render(
   <StrictMode>
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </StrictMode>,
 )
 

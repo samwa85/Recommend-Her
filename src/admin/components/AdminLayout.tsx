@@ -41,6 +41,7 @@ import { cn } from '@/lib/utils';
 import { useDashboardMetrics, useUnreadMessagesCount } from '../hooks/useAdminData';
 import type { DashboardMetrics } from '@/lib/queries';
 import { formatRelativeTime } from '@/lib/format/date';
+import { useAuth } from '@/lib/auth/hooks';
 
 // ============================================================================
 // NAVIGATION ITEMS
@@ -130,9 +131,12 @@ export function AdminLayout({
     return location.pathname.startsWith(path);
   };
 
+  // Auth hook for real logout
+  const { user, signOut } = useAuth();
+
   // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem('admin_session');
+  const handleLogout = async () => {
+    await signOut();
     navigate('/admin/login');
   };
 
@@ -303,17 +307,17 @@ export function AdminLayout({
                 <Button variant="ghost" className="gap-2 pl-2 pr-3">
                   <Avatar className="w-7 h-7">
                     <AvatarFallback className="bg-gradient-to-br from-rose-500 to-orange-500 text-white text-xs">
-                      AD
+                      {user?.profile?.nickname?.slice(0, 2).toUpperCase() || user?.email?.slice(0, 2).toUpperCase() || 'AD'}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden sm:inline text-sm font-medium">Admin</span>
+                  <span className="hidden sm:inline text-sm font-medium">{user?.profile?.nickname || 'Admin'}</span>
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">Super Admin</p>
-                  <p className="text-xs text-muted-foreground">admin@recommendher.africa</p>
+                  <p className="text-sm font-medium">{user?.profile?.nickname || 'Admin'}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email || 'admin@recommendher.africa'}</p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/admin/settings')}>

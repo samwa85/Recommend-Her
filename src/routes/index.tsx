@@ -1,5 +1,6 @@
 import { lazy } from 'react';
 import type { RouteObject } from 'react-router-dom';
+import { ProtectedRoute } from '@/admin/components/ProtectedRoute';
 
 // Eager load HomePage for testing
 import HomePage from '@/pages/HomePage';
@@ -28,10 +29,49 @@ const SettingsPage = lazy(() => import('@/admin/pages/SettingsPage'));
 const LoginPage = lazy(() => import('@/admin/pages/LoginPage'));
 const BlogPage = lazy(() => import('@/admin/pages/BlogPage'));
 const TestimonialsPage = lazy(() => import('@/admin/pages/TestimonialsPage'));
+const SetupAdminPage = lazy(() => import('@/admin/pages/SetupAdminPage'));
 
 // Legacy Admin (for backward compatibility)
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const SuperAdminDashboard = lazy(() => import('@/pages/SuperAdminDashboard'));
+
+// ============================================================================
+// PROTECTED ADMIN PAGE WRAPPERS
+// ============================================================================
+
+const ProtectedOverview = () => (
+  <ProtectedRoute><OverviewPage /></ProtectedRoute>
+);
+const ProtectedTalent = () => (
+  <ProtectedRoute><TalentPage /></ProtectedRoute>
+);
+const ProtectedNewTalent = () => (
+  <ProtectedRoute><NewTalentPage /></ProtectedRoute>
+);
+const ProtectedSponsors = () => (
+  <ProtectedRoute><SponsorsPage /></ProtectedRoute>
+);
+const ProtectedNewSponsor = () => (
+  <ProtectedRoute><NewSponsorPage /></ProtectedRoute>
+);
+const ProtectedRequests = () => (
+  <ProtectedRoute><RequestsPage /></ProtectedRoute>
+);
+const ProtectedMessages = () => (
+  <ProtectedRoute><MessagesPage /></ProtectedRoute>
+);
+const ProtectedAnalytics = () => (
+  <ProtectedRoute><AnalyticsPage /></ProtectedRoute>
+);
+const ProtectedSettings = () => (
+  <ProtectedRoute><SettingsPage /></ProtectedRoute>
+);
+const ProtectedBlog = () => (
+  <ProtectedRoute><BlogPage /></ProtectedRoute>
+);
+const ProtectedTestimonials = () => (
+  <ProtectedRoute><TestimonialsPage /></ProtectedRoute>
+);
 
 // Route definitions
 export const routes: RouteObject[] = [
@@ -47,19 +87,24 @@ export const routes: RouteObject[] = [
   { path: '/blog/:slug', element: <BlogPostPage /> },
   { path: '/contact', element: <Contact /> },
 
-  // New Admin Routes (Single Source of Truth)
-  { path: '/admin', element: <OverviewPage /> },
-  { path: '/admin/talent', element: <TalentPage /> },
-  { path: '/admin/talent/new', element: <NewTalentPage /> },
-  { path: '/admin/sponsors', element: <SponsorsPage /> },
-  { path: '/admin/sponsors/new', element: <NewSponsorPage /> },
-  { path: '/admin/requests', element: <RequestsPage /> },
-  { path: '/admin/messages', element: <MessagesPage /> },
-  { path: '/admin/analytics', element: <AnalyticsPage /> },
-  { path: '/admin/settings', element: <SettingsPage /> },
-  { path: '/admin/blog', element: <BlogPage /> },
-  { path: '/admin/testimonials', element: <TestimonialsPage /> },
+  // New Admin Routes (Protected)
+  { path: '/admin', element: <ProtectedOverview /> },
+  { path: '/admin/talent', element: <ProtectedTalent /> },
+  { path: '/admin/talent/new', element: <ProtectedNewTalent /> },
+  { path: '/admin/sponsors', element: <ProtectedSponsors /> },
+  { path: '/admin/sponsors/new', element: <ProtectedNewSponsor /> },
+  { path: '/admin/requests', element: <ProtectedRequests /> },
+  { path: '/admin/messages', element: <ProtectedMessages /> },
+  { path: '/admin/analytics', element: <ProtectedAnalytics /> },
+  { path: '/admin/settings', element: <ProtectedSettings /> },
+  { path: '/admin/blog', element: <ProtectedBlog /> },
+  { path: '/admin/testimonials', element: <ProtectedTestimonials /> },
+  
+  // Login (Public)
   { path: '/admin/login', element: <LoginPage /> },
+  
+  // Setup (Temporary - remove after creating admin)
+  { path: '/admin/setup', element: <SetupAdminPage /> },
 
   // Legacy Admin (for backward compatibility)
   { path: '/admin-legacy', element: <AdminDashboard /> },

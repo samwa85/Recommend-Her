@@ -1,9 +1,9 @@
 // ============================================================================
-// LOGIN PAGE - Admin login page
+// LOGIN PAGE - Admin login with InsForge authentication
 // ============================================================================
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Shield,
   Mail,
@@ -21,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth/hooks';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -28,6 +29,9 @@ import { toast } from 'sonner';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { signIn, isAuthenticated, isLoading: authLoading } = useAuth();
+  
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +41,14 @@ export default function LoginPage() {
     password: '',
     rememberMe: false,
   });
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = (location.state as { from?: string })?.from || '/admin';
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,25 +67,36 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Implement actual authentication with InsForge
-      // For now, we'll simulate a successful login
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { success, error } = await signIn(formData.email, formData.password);
       
-      // Simulate validation - in production, this would call the auth API
-      if (formData.email === 'admin@example.com' && formData.password === 'admin') {
-        toast.success('Welcome back!');
-        navigate('/admin');
-      } else {
-        // For demo purposes, allow any login
-        toast.success('Welcome back!');
-        navigate('/admin');
+      if (!success || error) {
+        setError(error?.message || 'Invalid email or password');
+        toast.error('Sign in failed');
+        return;
       }
+
+      toast.success('Welcome back!');
+      const from = (location.state as { from?: string })?.from || '/admin';
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in');
+      toast.error('Sign in failed');
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/50">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
@@ -115,6 +138,7 @@ export default function LoginPage() {
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     className="pl-9"
                     disabled={isLoading}
+                    autoComplete="email"
                   />
                 </div>
               </div>
@@ -131,6 +155,7 @@ export default function LoginPage() {
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     className="pl-9 pr-10"
                     disabled={isLoading}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
