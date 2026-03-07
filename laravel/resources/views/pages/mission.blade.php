@@ -78,30 +78,61 @@ $stats = [
                         class="font-serif text-2xl sm:text-3xl font-bold mb-4"
                         style="color: hsl(var(--foreground));"
                     >
-                        The Quiet Problem
+                        A Letter from Wahda Mbaraka, Founder of Recommend Her
                     </h2>
                     <p 
                         class="font-sans text-base leading-relaxed mb-4"
                         style="color: hsl(var(--muted-foreground));"
                     >
-                        For years, I've watched talented women work twice as hard to get half as far. 
-                        The data is clear: women are underrepresented in leadership not because of 
-                        capability, but because of access.
+                        <strong>For 15 years, I sat at tables where too few women were seated.</strong>
                     </p>
                     <p 
                         class="font-sans text-base leading-relaxed mb-4"
                         style="color: hsl(var(--muted-foreground));"
                     >
-                        Recommend Her was born from a simple belief: when women recommend women, 
-                        incredible things happen. Not mentorship from afar—but active sponsorship 
-                        that opens doors and creates opportunities.
+                        I watched brilliant women perfect their CVs in silence while others—less qualified but more bold—stepped forward to claim opportunities. I witnessed the "quiet problem" firsthand: talented women waiting to be invited, while doors opened for those who simply raised their hands.
                     </p>
                     <p 
-                        class="font-sans text-base leading-relaxed"
+                        class="font-sans text-base leading-relaxed mb-4"
                         style="color: hsl(var(--muted-foreground));"
                     >
-                        This is not a job board. It's a movement. A pipeline built on trust, 
-                        proactive advocacy, and the power of intentional recommendation.
+                        Then one day, a question stopped me cold:
+                    </p>
+                    <p 
+                        class="font-sans text-base leading-relaxed mb-4 italic"
+                        style="color: hsl(var(--muted-foreground));"
+                    >
+                        "Do you know someone great for this role?"
+                    </p>
+                    <p 
+                        class="font-sans text-base leading-relaxed mb-4"
+                        style="color: hsl(var(--muted-foreground));"
+                    >
+                        My mind raced. I knew exceptional women. I had mentored them, coached them, watched them shine. But their names didn't come instantly because their CVs weren't in my hand. Their readiness wasn't visible. Their courage hadn't been activated.
+                    </p>
+                    <p 
+                        class="font-sans text-base leading-relaxed mb-4"
+                        style="color: hsl(var(--muted-foreground));"
+                    >
+                        That moment changed everything.
+                    </p>
+                    <p 
+                        class="font-sans text-base leading-relaxed mb-4"
+                        style="color: hsl(var(--muted-foreground));"
+                    >
+                        I realized that opportunity doesn't flow through merit alone. It flows through networks. Through recommendations. Through someone speaking your name in a room you aren't in.
+                    </p>
+                    <p 
+                        class="font-sans text-base leading-relaxed mb-4"
+                        style="color: hsl(var(--muted-foreground));"
+                    >
+                        So I asked myself: <em>What if we built a new kind of network? One built on intentional sponsorship. One where women don't have to wait to be seen—because we actively choose to see them.</em>
+                    </p>
+                    <p 
+                        class="font-sans text-base leading-relaxed font-semibold"
+                        style="color: hsl(var(--foreground));"
+                    >
+                        And so, Recommend Her was born.
                     </p>
                 </div>
             </div>
