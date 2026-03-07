@@ -9,6 +9,7 @@ import Footer from './sections/Footer';
 import { routes } from './routes';
 import { PageLoader } from './components/PageLoader';
 import { Toaster } from './components/ui/sonner';
+import WhatsAppButton from './components/WhatsAppButton';
 
 // Register GSAP plugins
 try {
@@ -35,6 +36,7 @@ function Layout({ children }: { children: React.ReactNode }) {
       <Navigation />
       {children}
       <Footer />
+      <WhatsAppButton />
     </>
   );
 }

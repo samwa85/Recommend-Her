@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Mail, Phone, MapPin, Send, Building2, User, MessageSquare, Check, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Building2, User, MessageSquare, Check, Loader2, AlertCircle, MessageCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -195,7 +195,31 @@ const Contact = () => {
                   </div>
                   <div>
                     <p style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-semibold">Phone</p>
-                    <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm">+1 (555) 123-4567</p>
+                    <a 
+                      href="tel:+255789990330" 
+                      style={{ color: "hsl(var(--muted-foreground))" }} 
+                      className="font-sans text-sm hover:text-primary transition-colors"
+                    >
+                      +255 789 990 330
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div style={{ backgroundColor: "#25D366" }} className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <MessageCircle style={{ color: "white" }} size={20} />
+                  </div>
+                  <div>
+                    <p style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-semibold">WhatsApp</p>
+                    <a 
+                      href="https://wa.me/255789990330" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "hsl(var(--muted-foreground))" }} 
+                      className="font-sans text-sm hover:text-[#25D366] transition-colors"
+                    >
+                      Chat on WhatsApp
+                    </a>
                   </div>
                 </div>
 
@@ -205,7 +229,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <p style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-semibold">Location</p>
-                    <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm">New York, NY</p>
+                    <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm">Dar es Salaam, Tanzania</p>
                   </div>
                 </div>
               </div>
