@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://recommendher.com/sitemap.xml
+Sitemap: https://recommendher.africa/sitemap.xml
 
 # Disallow admin routes
 Disallow: /admin

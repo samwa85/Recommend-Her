@@ -9,7 +9,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowLeft, Clock, Calendar, Tag, Share2, Twitter, Linkedin, Facebook, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { getBlogPostBySlug, getPublishedBlogPosts } from '@/lib/queries';
 import { blogPosts as staticBlogPosts, getBlogPostBySlug as getStaticPostBySlug } from '@/lib/data/blog';
 import type { BlogPost } from '@/lib/types/db';

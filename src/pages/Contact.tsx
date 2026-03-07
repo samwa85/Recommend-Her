@@ -185,7 +185,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <p style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm font-semibold">Email</p>
-                    <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm">hello@recommendher.org</p>
+                    <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm">hello@recommendher.africa</p>
                   </div>
                 </div>
 
@@ -223,11 +223,11 @@ const Contact = () => {
                 Interested in corporate talent pipeline access? Let's talk.
               </p>
               <a
-                href="mailto:partnerships@recommendher.org"
+                href="mailto:partnerships@recommendher.africa"
                 className="inline-flex items-center gap-2 text-white font-serif text-sm font-semibold
                          hover:opacity-80 transition-colors"
               >
-                partnerships@recommendher.org
+                partnerships@recommendher.africa
               </a>
             </div>
           </div>

@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+
 import {
   Select,
   SelectContent,
@@ -36,7 +36,6 @@ import { toast } from 'sonner';
 import { AdminLayout } from '../components/AdminLayout';
 import { createTalent } from '@/lib/queries';
 import { INDUSTRIES } from '@/lib/database.types';
-import { cn } from '@/lib/utils';
 
 // ============================================================================
 // CONSTANTS

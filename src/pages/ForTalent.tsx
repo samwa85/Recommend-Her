@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Eye,
   File,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -911,6 +912,29 @@ const ForTalent = () => {
                 CV / Resume
               </h3>
               <Separator />
+
+              {/* CV Optimization Guide Download */}
+              <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
+                <div className="flex items-start gap-3">
+                  <FileText className="flex-shrink-0 mt-0.5 text-primary h-5 w-5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-foreground font-medium mb-1">
+                      Want to make your CV stand out?
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Download our free guide to optimize your CV for sponsorship opportunities.
+                    </p>
+                    <a
+                      href="/downloads/Recommend%20Her%20Sponsorship%20CV%20Optimization%20Guide.pdf"
+                      download
+                      className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <Download size={16} />
+                      Download CV Optimization Guide
+                    </a>
+                  </div>
+                </div>
+              </div>
 
               <div>
                 <Label className="text-base font-medium mb-3 block">

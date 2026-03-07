@@ -110,7 +110,7 @@ logfile /var/log/msmtp.log
 account gmail
 host smtp.gmail.com
 port 587
-from noreply@recommendher.org
+from noreply@recommendher.africa
 tls_starttls on
 user YOUR_GMAIL@gmail.com
 password YOUR_APP_PASSWORD
@@ -239,7 +239,7 @@ logfile /var/log/msmtp.log
 account sendgrid
 host smtp.sendgrid.net
 port 587
-from noreply@recommendher.org
+from noreply@recommendher.africa
 user apikey
 password YOUR_SENDGRID_API_KEY
 

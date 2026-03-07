@@ -50,8 +50,7 @@ const Footer = () => {
                   alt="Recommend Her"
                   className="h-16 sm:h-20 w-auto object-contain"
                   style={{
-                    maxWidth: '280px',
-                    filter: 'brightness(0) invert(1)'
+                    maxWidth: '280px'
                   }}
                   loading="lazy"
                 />

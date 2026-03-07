@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { getPublishedBlogPosts, getBlogCategories } from '@/lib/queries';
 import { blogPosts as staticBlogPosts, getAllCategories as getStaticCategories } from '@/lib/data/blog';
 import type { BlogPost } from '@/lib/types/db';
-import { toast } from 'sonner';
 
 // Helper to convert static blog format to database format
 function convertStaticToDbFormat(staticPosts: typeof staticBlogPosts): BlogPost[] {

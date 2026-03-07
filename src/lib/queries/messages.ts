@@ -56,7 +56,8 @@ export async function listMessages(
   const { filters = {}, pagination = {} } = options;
   const page = pagination.page ?? 1;
   const perPage = pagination.perPage ?? 25;
-  const sortBy = pagination.sortBy ?? 'created_at';
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _sortBy = pagination.sortBy ?? 'created_at';
   const sortOrder = pagination.sortOrder ?? 'desc';
   
   try {
@@ -237,23 +238,20 @@ export async function updateMessage(
 
 export async function updateMessageStatus(
   id: string,
-  status: MessageStatus,
-  _handledByAdminId?: string
+  status: MessageStatus
 ): Promise<QueryResult<Message>> {
   const mappedStatus = status === MessageStatus.UNREAD ? 'new' : status as ContactSubmissionRow['status'];
   return updateMessage(id, { status: mappedStatus as MessageStatus });
 }
 
 export async function markMessageAsRead(
-  id: string,
-  _adminId?: string
+  id: string
 ): Promise<QueryResult<Message>> {
   return updateMessageStatus(id, MessageStatus.READ);
 }
 
 export async function markMessageAsReplied(
-  id: string,
-  _adminId?: string
+  id: string
 ): Promise<QueryResult<Message>> {
   return updateMessageStatus(id, MessageStatus.REPLIED);
 }
@@ -466,8 +464,7 @@ export interface Reply {
  */
 export async function addMessageReply(
   submissionId: string,
-  replyText: string,
-  _adminId?: string
+  replyText: string
 ): Promise<{ success: boolean; data?: Reply; error: Error | null }> {
   try {
     // Insert reply

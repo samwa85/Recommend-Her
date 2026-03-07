@@ -11,4 +11,25 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  esbuild: {
+    // Drop console.log and debugger statements in production
+    drop: ['console', 'debugger'],
+    // Keep console.error and console.warn
+    pure: ['console.log', 'console.info', 'console.debug'],
+  },
+  build: {
+    // Additional build optimizations
+    minify: 'esbuild',
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate vendor chunks for better caching
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-tabs'],
+          'charts': ['recharts'],
+        },
+      },
+    },
+  },
 });

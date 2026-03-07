@@ -7,18 +7,15 @@ import {
   Settings,
   Bell,
   Shield,
-  Users,
   Database,
   Mail,
   Save,
   Loader2,
-  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -68,8 +65,8 @@ export default function SettingsPage() {
   // Email settings
   const [emailSettings, setEmailSettings] = useState({
     senderName: 'Recommend Her Admin',
-    senderEmail: 'admin@recommendher.com',
-    replyToEmail: 'support@recommendher.com',
+    senderEmail: 'admin@recommendher.africa',
+    replyToEmail: 'support@recommendher.africa',
     emailFooter: '',
   });
 

@@ -67,7 +67,7 @@ describe('Contact Page', () => {
 
     // Check contact information
     expect(screen.getByText('Email')).toBeInTheDocument();
-    expect(screen.getByText('hello@recommendher.org')).toBeInTheDocument();
+    expect(screen.getByText('hello@recommendher.africa')).toBeInTheDocument();
     expect(screen.getByText('Phone')).toBeInTheDocument();
     expect(screen.getByText('+1 (555) 123-4567')).toBeInTheDocument();
     expect(screen.getByText('Location')).toBeInTheDocument();

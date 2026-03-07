@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Download, FileText, CheckCircle, BookOpen, ArrowRight, Clock } from 'lucide-react';
+import { Download, FileText, CheckCircle, BookOpen, ArrowRight, Clock, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { blogPosts } from '@/lib/data/blog';
 
@@ -12,26 +12,38 @@ const resources = [
   {
     icon: FileText,
     title: 'How to Optimize Your CV for Sponsorship',
-    description: 'A comprehensive guide to crafting a CV that gets noticed by sponsors.',
+    description: 'A comprehensive guide to crafting a CV that gets noticed by sponsors and opens doors to new opportunities.',
     type: 'PDF Guide',
-    color: 'bg-coral/10',
-    iconColor: 'text-coral',
+    color: 'bg-rose-50',
+    iconColor: 'text-rose-500',
+    buttonColor: 'bg-rose-500 hover:bg-rose-600',
+    downloadUrl: '/downloads/Recommend%20Her%20Sponsorship%20CV%20Optimization%20Guide.pdf',
+    fileSize: '1.4 MB',
+    pages: '12 pages',
   },
   {
     icon: BookOpen,
     title: "The Sponsor's Playbook",
-    description: 'A guide to effective recommendation and active sponsorship.',
+    description: 'Learn the art of effective recommendation and become a powerful advocate for women in leadership.',
     type: 'PDF Guide',
-    color: 'bg-navy/10',
-    iconColor: 'text-navy',
+    color: 'bg-blue-50',
+    iconColor: 'text-blue-600',
+    buttonColor: 'bg-blue-600 hover:bg-blue-700',
+    downloadUrl: "/downloads/THE%20SPONSOR'S%20PLAYBOOK.pdf",
+    fileSize: '812 KB',
+    pages: '8 pages',
   },
   {
     icon: CheckCircle,
     title: 'Preparing for Your Next Career Leap',
-    description: 'A checklist to help you prepare for your next leadership opportunity.',
-    type: 'Checklist',
-    color: 'bg-gold/20',
-    iconColor: 'text-gold',
+    description: 'Your step-by-step checklist to confidently prepare for and land your next leadership role.',
+    type: 'PDF Guide',
+    color: 'bg-amber-50',
+    iconColor: 'text-amber-600',
+    buttonColor: 'bg-amber-600 hover:bg-amber-700',
+    downloadUrl: '/downloads/PREPARING%20FOR%20YOUR%20NEXT%20CAREER%20LEAP.pdf',
+    fileSize: '1.4 MB',
+    pages: '10 pages',
   },
 ];
 
@@ -127,25 +139,57 @@ const Resources = () => {
                 key={resource.title}
                 className="bg-white rounded-2xl p-6 shadow-brand border border-navy/5
                          transition-all duration-300 hover:-translate-y-2 hover:shadow-brand-lg
-                         group cursor-pointer"
+                         group flex flex-col"
               >
-                <div className={`w-14 h-14 ${resource.color} rounded-xl flex items-center justify-center mb-4`}>
-                  <resource.icon size={28} className={resource.iconColor} />
+                {/* Icon & Type Badge */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-14 h-14 ${resource.color} rounded-xl flex items-center justify-center
+                                transition-transform duration-300 group-hover:scale-110`}>
+                    <resource.icon size={28} className={resource.iconColor} />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 
+                                 rounded-full font-sans text-xs font-medium text-gray-600">
+                    <FileDown size={12} />
+                    {resource.type}
+                  </span>
                 </div>
-                <span style={{ color: "hsl(var(--foreground))" }} className="inline-block px-3 py-1 /5 rounded-full font-serif text-xs  mb-3">
-                  {resource.type}
-                </span>
-                <h3 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-lg font-bold  mb-2 group-hover: transition-colors">
+
+                {/* Title */}
+                <h3 className="font-serif text-lg font-bold text-foreground mb-2 
+                             group-hover:text-primary transition-colors line-clamp-2">
                   {resource.title}
                 </h3>
-                <p style={{ color: "hsl(var(--foreground))" }} className="font-sans text-sm /60 mb-4">
+
+                {/* Description */}
+                <p className="font-sans text-sm text-muted-foreground mb-4 line-clamp-2 flex-grow">
                   {resource.description}
                 </p>
-                <button style={{ color: "hsl(var(--foreground))" }} className="inline-flex items-center gap-2  font-serif text-sm font-semibold
-                                 group-hover: transition-colors">
-                  <Download size={16} />
-                  Download
-                </button>
+
+                {/* File Info */}
+                <div className="flex items-center gap-3 mb-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                    {resource.fileSize}
+                  </span>
+                  <span className="w-px h-3 bg-gray-300"></span>
+                  <span>{resource.pages}</span>
+                </div>
+
+                {/* Download Button */}
+                <a 
+                  href={resource.downloadUrl}
+                  download
+                  className={`w-full inline-flex items-center justify-center gap-2 
+                            px-4 py-3 rounded-xl font-serif text-sm font-semibold
+                            text-white ${resource.buttonColor}
+                            transition-all duration-300 
+                            hover:shadow-lg hover:shadow-primary/25
+                            active:scale-[0.98] group/btn`}
+                >
+                  <Download size={18} className="transition-transform duration-300 
+                                                 group-hover/btn:translate-y-0.5" />
+                  Download Free Guide
+                </a>
               </div>
             ))}
           </div>

@@ -1,3 +1,4 @@
+import { logger } from "./lib/logger";
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import * as Sentry from '@sentry/react'
@@ -5,8 +6,8 @@ import './index.css'
 import App from './App.tsx'
 
 // Debug logging
-console.log('[App] Starting app initialization...');
-console.log('[App] Environment:', import.meta.env.MODE);
+logger.log('[App] Starting app initialization...');
+logger.log('[App] Environment:', import.meta.env.MODE);
 
 // Initialize Sentry for error tracking
 const sentryDsn = import.meta.env['VITE_SENTRY_DSN'];
@@ -41,9 +42,9 @@ if (sentryDsn && sentryDsn !== 'https://your-sentry-dsn@sentry.io/project-id') {
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  console.error('[App] Root element not found!');
+  logger.error('[App] Root element not found!');
 } else {
-  console.log('[App] Root element found, rendering app...');
+  logger.log('[App] Root element found, rendering app...');
 }
 
 createRoot(rootElement!).render(
@@ -52,4 +53,4 @@ createRoot(rootElement!).render(
   </StrictMode>,
 )
 
-console.log('[App] App rendered successfully');
+logger.log('[App] App rendered successfully');

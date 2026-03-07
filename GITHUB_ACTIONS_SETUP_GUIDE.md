@@ -168,7 +168,7 @@ You should see a new workflow running:
 
 ### 4.4 Verify Deployment
 ```
-Visit: http://yourdomain.com or http://recommendher.africa
+Visit: https://recommendher.africa
 ```
 
 ---

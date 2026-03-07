@@ -2,7 +2,7 @@
 // BLOG EDITOR - Rich text editor for blog posts with image upload
 // ============================================================================
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import {
   Bold,
   Italic,
@@ -12,7 +12,6 @@ import {
   ListOrdered,
   Quote,
   Link,
-  Image,
   Video,
   Eye,
   Save,
@@ -33,11 +32,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { uploadBlogImage, calculateReadTime, generateSlug } from '@/lib/queries/blog';
 import type { BlogPost, BlogPostInput } from '@/lib/types/db';
-import { cn } from '@/lib/utils';
 
 // ============================================================================
 // TYPES

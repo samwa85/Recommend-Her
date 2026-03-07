@@ -1,3 +1,4 @@
+import { logger } from "./lib/logger";
 import { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { gsap } from 'gsap';
@@ -12,9 +13,9 @@ import { Toaster } from './components/ui/sonner';
 // Register GSAP plugins
 try {
   gsap.registerPlugin(ScrollTrigger);
-  console.log('[App] GSAP ScrollTrigger registered');
+  logger.log('[App] GSAP ScrollTrigger registered');
 } catch (e) {
-  console.error('[App] Failed to register GSAP ScrollTrigger:', e);
+  logger.error('[App] Failed to register GSAP ScrollTrigger:', e);
 }
 
 // Wrapper to conditionally show Navigation and Footer
@@ -23,7 +24,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
   
-  console.log('[Layout] Current path:', location.pathname, 'isAdmin:', isAdminRoute);
+  logger.log('[Layout] Current path:', location.pathname, 'isAdmin:', isAdminRoute);
 
   if (isAdminRoute) {
     return <>{children}</>;
@@ -40,7 +41,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
 function App() {
   useEffect(() => {
-    console.log('[App] Component mounted');
+    logger.log('[App] Component mounted');
     ScrollTrigger.refresh();
     return () => {
       ScrollTrigger.getAll().forEach(trigger => trigger.kill());

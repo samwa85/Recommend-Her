@@ -127,7 +127,7 @@ logfile /var/log/msmtp.log
 account gmail
 host smtp.gmail.com
 port 587
-from noreply@recommendher.org
+from noreply@recommendher.africa
 tls_starttls on
 user ${GMAIL_USER}
 password ${GMAIL_APP_PASSWORD}
@@ -190,7 +190,7 @@ set -euo pipefail
 
 # Configuration
 NOTIFY_EMAIL="__NOTIFY_EMAIL__"
-FROM_EMAIL="noreply@recommendher.org"
+FROM_EMAIL="noreply@recommendher.africa"
 FROM_NAME="Recommend Her"
 DB_HOST="db.dcgko804wcgwow4s4ko40000.supabase.co"
 DB_PORT="5432"
@@ -294,7 +294,7 @@ ACTION REQUIRED
 ----------------------------------------
 
 Please review these submissions in the admin dashboard:
-https://recommendher.org/admin
+https://recommendher.africa/admin
 
 ----------------------------------------
 This is an automated notification from Recommend Her.

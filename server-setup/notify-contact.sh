@@ -14,7 +14,7 @@ set -euo pipefail
 
 # Configuration
 NOTIFY_EMAIL="samwa85@gmail.com"
-FROM_EMAIL="noreply@recommendher.org"
+FROM_EMAIL="noreply@recommendher.africa"
 FROM_NAME="Recommend Her"
 DB_HOST="db.dcgko804wcgwow4s4ko40000.supabase.co"
 DB_PORT="5432"
@@ -119,7 +119,7 @@ ACTION REQUIRED
 ----------------------------------------
 
 Please review these submissions in the admin dashboard:
-https://recommendher.org/admin
+https://recommendher.africa/admin
 
 ----------------------------------------
 This is an automated notification from Recommend Her.

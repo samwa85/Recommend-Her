@@ -11,8 +11,6 @@ import {
   Edit2,
   Trash2,
   MoreHorizontal,
-  Filter,
-  Calendar,
   Clock,
   CheckCircle,
   XCircle,
@@ -68,14 +66,14 @@ import {
   type ListBlogOptions,
 } from '@/lib/queries';
 import type { BlogPost, BlogPostInput } from '@/lib/types/db';
-import { cn } from '@/lib/utils';
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 export default function BlogPage() {
-  const navigate = useNavigate();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [totalCount, setTotalCount] = useState(0);

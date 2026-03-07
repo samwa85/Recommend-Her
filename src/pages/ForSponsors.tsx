@@ -12,7 +12,9 @@ import {
   Linkedin, 
   Calendar,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  BookOpen,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -268,6 +270,34 @@ const ForSponsors = () => {
               </p>
             </div>
           ))}
+        </div>
+
+        {/* Sponsor's Playbook Download */}
+        <div className="bg-white rounded-2xl p-8 shadow-brand border border-navy/5 mb-12 max-w-3xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div style={{ backgroundColor: "hsl(var(--primary))" }} className="w-16 h-16 /10 rounded-full flex items-center justify-center flex-shrink-0">
+              <BookOpen style={{ color: "hsl(var(--primary))" }} size={28} />
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <h3 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-xl font-bold mb-2">
+                The Sponsor's Playbook
+              </h3>
+              <p style={{ color: "hsl(var(--muted-foreground))" }} className="font-sans text-sm mb-4">
+                Download our comprehensive guide to effective recommendation and active sponsorship. 
+                Learn best practices for advocating talented women into leadership positions.
+              </p>
+              <a
+                href="/downloads/THE%20SPONSOR'S%20PLAYBOOK.pdf"
+                download
+                style={{ backgroundColor: "hsl(var(--primary))" }}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-serif font-semibold
+                         hover:opacity-90 transition-all duration-300 hover:shadow-brand"
+              >
+                <Download size={18} />
+                Download Playbook
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Error Alert */}
