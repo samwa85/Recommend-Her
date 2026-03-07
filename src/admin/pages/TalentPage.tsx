@@ -331,20 +331,27 @@ export default function TalentPage() {
   const handleStatusChange = useCallback(async (status: TalentStatus) => {
     toast.promise(
       async () => {
+        console.log(`[TalentPage] Updating talent ${selectedTalentId} status to ${status}`);
         const result = await updateStatus(status as 'pending' | 'approved' | 'rejected' | 'archived');
+        console.log('[TalentPage] Update result:', result);
         if (result.success) {
           refresh();
           return `Talent ${status}`;
+        }
+        // Log detailed error
+        if (result.error) {
+          console.error('[TalentPage] Update failed:', result.error);
+          throw new Error(result.error.message || 'Failed to update status');
         }
         throw new Error('Failed to update status');
       },
       {
         loading: 'Updating...',
         success: `Talent marked as ${status}`,
-        error: 'Failed to update talent',
+        error: (err: Error) => `Failed to update: ${err.message || 'Check RLS policies'}`,
       }
     );
-  }, [updateStatus, refresh]);
+  }, [updateStatus, refresh, selectedTalentId]);
 
   const handleDelete = useCallback(async () => {
     if (!selectedTalentId) return;
@@ -372,10 +379,13 @@ export default function TalentPage() {
   const handleBulkAction = useCallback(async () => {
     const ids = Array.from(selectedRows);
     
+    console.log(`[TalentPage] Bulk action ${bulkAction} on ${ids.length} items:`, ids);
+    
     toast.promise(
       async () => {
         const results = await Promise.allSettled(
           ids.map((id) => {
+            console.log(`[TalentPage] Processing ${bulkAction} for talent ${id}`);
             if (bulkAction === 'delete') return deleteTalentQuery(id);
             if (bulkAction === 'approve') return updateTalentStatusQuery(id, TalentStatus.APPROVED);
             if (bulkAction === 'reject') return updateTalentStatusQuery(id, TalentStatus.REJECTED);
@@ -383,27 +393,58 @@ export default function TalentPage() {
           })
         );
 
-        const successCount = results.filter((result) => {
-          if (result.status === 'rejected') return false;
-          const value = result.value as { success?: boolean; error?: Error | null };
-          if ('success' in value) return value.success === true;
-          return value.error == null;
-        }).length;
+        // Count successes and failures
+        let successCount = 0;
+        let failureCount = 0;
+        const errors: string[] = [];
 
+        results.forEach((result, index) => {
+          console.log(`[TalentPage] Result ${index}:`, result);
+          if (result.status === 'rejected') {
+            failureCount++;
+            errors.push(`Item ${index + 1}: ${result.reason}`);
+          } else {
+            const value = result.value as { data?: unknown; success?: boolean; error?: Error | null };
+            const isSuccess = 'success' in value 
+              ? value.success === true 
+              : (value.error == null && value.data != null);
+            
+            if (isSuccess) {
+              successCount++;
+            } else {
+              failureCount++;
+              if (value.error?.message) {
+                errors.push(`Item ${index + 1}: ${value.error.message}`);
+              }
+            }
+          }
+        });
+
+        console.log(`[TalentPage] Bulk action complete: ${successCount} success, ${failureCount} failed`);
+
+        // If all failed, throw error with details
         if (successCount === 0) {
-          throw new Error('No talent records were updated');
+          const errorMsg = failureCount > 0 
+            ? `All ${failureCount} operations failed. ${errors[0] || 'Check RLS policies or permissions.'}`
+            : 'No talent records were updated';
+          throw new Error(errorMsg);
+        }
+
+        // If partial success, show warning
+        if (failureCount > 0) {
+          toast.warning(`${successCount} succeeded, ${failureCount} failed. Some items may have been skipped due to permissions.`);
         }
 
         setSelectedRows(new Set());
         setSelectAll(false);
         setBulkActionDialogOpen(false);
         refresh();
-        return `${successCount} talents updated`;
+        return `${successCount} talent(s) ${bulkAction === 'delete' ? 'deleted' : 'updated'}`;
       },
       {
-        loading: 'Processing...',
-        success: 'Bulk action completed',
-        error: 'Bulk action failed',
+        loading: `Processing ${ids.length} talent(s)...`,
+        success: (message) => message,
+        error: (err) => err instanceof Error ? err.message : 'Bulk action failed',
       }
     );
   }, [selectedRows, bulkAction, refresh]);

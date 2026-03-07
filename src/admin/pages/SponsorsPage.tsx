@@ -403,27 +403,55 @@ export default function SponsorsPage() {
           })
         );
 
-        const successCount = results.filter((result) => {
-          if (result.status === 'rejected') return false;
-          const value = result.value as { success?: boolean; error?: Error | null };
-          if ('success' in value) return value.success === true;
-          return value.error == null;
-        }).length;
+        // Count successes and failures
+        let successCount = 0;
+        let failureCount = 0;
+        const errors: string[] = [];
 
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            failureCount++;
+            errors.push(`Item ${index + 1}: ${result.reason}`);
+          } else {
+            const value = result.value as { success?: boolean; error?: Error | null };
+            const isSuccess = 'success' in value 
+              ? value.success === true 
+              : value.error == null;
+            
+            if (isSuccess) {
+              successCount++;
+            } else {
+              failureCount++;
+              if (value.error?.message) {
+                errors.push(`Item ${index + 1}: ${value.error.message}`);
+              }
+            }
+          }
+        });
+
+        // If all failed, throw error with details
         if (successCount === 0) {
-          throw new Error('No sponsor records were updated');
+          const errorMsg = failureCount > 0 
+            ? `All ${failureCount} operations failed. ${errors[0] || 'Check RLS policies or permissions.'}`
+            : 'No sponsor records were updated';
+          throw new Error(errorMsg);
+        }
+
+        // If partial success, show warning
+        if (failureCount > 0) {
+          toast.warning(`${successCount} succeeded, ${failureCount} failed. Some items may have been skipped due to permissions.`);
         }
 
         setSelectedRows(new Set());
         setSelectAll(false);
         setBulkActionDialogOpen(false);
         refresh();
-        return `${successCount} sponsors updated`;
+        return `${successCount} sponsor(s) ${bulkAction === 'delete' ? 'deleted' : 'updated'}`;
       },
       {
-        loading: 'Processing...',
-        success: 'Bulk action completed',
-        error: 'Bulk action failed',
+        loading: `Processing ${ids.length} sponsor(s)...`,
+        success: (message) => message,
+        error: (err) => err instanceof Error ? err.message : 'Bulk action failed',
       }
     );
   }, [selectedRows, bulkAction, refresh]);

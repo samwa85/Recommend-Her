@@ -218,7 +218,14 @@ export async function updateMessage(
     
     if (updates.status) {
       // Map MessageStatus to contact_submissions status
-      dbUpdates.status = updates.status === MessageStatus.UNREAD ? 'new' : updates.status as ContactSubmissionRow['status'];
+      // 'unread' -> 'new', 'spam' -> 'archived' (not valid in DB), others pass through
+      if (updates.status === MessageStatus.UNREAD) {
+        dbUpdates.status = 'new';
+      } else if (updates.status === MessageStatus.SPAM) {
+        dbUpdates.status = 'archived'; // Map spam to archived
+      } else {
+        dbUpdates.status = updates.status as ContactSubmissionRow['status'];
+      }
     }
     
     const { data, error } = await db
@@ -240,8 +247,30 @@ export async function updateMessageStatus(
   id: string,
   status: MessageStatus
 ): Promise<QueryResult<Message>> {
-  const mappedStatus = status === MessageStatus.UNREAD ? 'new' : status as ContactSubmissionRow['status'];
-  return updateMessage(id, { status: mappedStatus as MessageStatus });
+  try {
+    // Map UI status to DB status
+    // 'unread' -> 'new', 'spam' -> 'archived' (not valid in DB), others pass through
+    let dbStatus: ContactSubmissionRow['status'];
+    if (status === MessageStatus.UNREAD) {
+      dbStatus = 'new';
+    } else if (status === MessageStatus.SPAM) {
+      dbStatus = 'archived'; // Map spam to archived
+    } else {
+      dbStatus = status as ContactSubmissionRow['status'];
+    }
+    
+    const { data, error } = await db
+      .from('contact_submissions')
+      .update({ status: dbStatus })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data: mapContactToMessage(data as ContactSubmissionRow), error: null };
+  } catch (error) {
+    return handleSingleQueryError<Message>(error);
+  }
 }
 
 export async function markMessageAsRead(
@@ -298,7 +327,16 @@ export async function bulkUpdateMessageStatus(
   status: MessageStatus
 ): Promise<{ count: number; error: Error | null }> {
   try {
-    const mappedStatus = status === MessageStatus.UNREAD ? 'new' : status as ContactSubmissionRow['status'];
+    // Map UI status to DB status
+    // 'unread' -> 'new', 'spam' -> 'archived' (not valid in DB), others pass through
+    let mappedStatus: ContactSubmissionRow['status'];
+    if (status === MessageStatus.UNREAD) {
+      mappedStatus = 'new';
+    } else if (status === MessageStatus.SPAM) {
+      mappedStatus = 'archived'; // Map spam to archived
+    } else {
+      mappedStatus = status as ContactSubmissionRow['status'];
+    }
     
     // Perform the update
     const { error } = await db

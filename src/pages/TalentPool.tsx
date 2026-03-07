@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Lock, Search, Filter, ArrowUpRight, Eye, EyeOff, User } from 'lucide-react';
+import { Lock, Search, Filter, ArrowUpRight, Eye, EyeOff, User, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,115 +13,11 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { TalentCardSkeleton } from '@/components/TalentCardSkeleton';
+import { listTalent } from '@/lib/queries';
+import type { TalentProfile } from '@/lib/types/db';
+import { toast } from 'sonner';
 
 gsap.registerPlugin(ScrollTrigger);
-
-const allTalents = [
-  {
-    id: 1,
-    title: 'Senior Product Manager | 8+ Years',
-    tags: ['Tech', 'Product', 'Strategy'],
-    expertise: 'Product strategy, team leadership, agile methodologies, roadmap planning',
-    experience: '8 years',
-    industry: 'Technology',
-    achievements: [
-      'Led product launch generating $2M ARR',
-      'Managed cross-functional team of 15',
-      'Scaled product from 0 to 100K users',
-    ],
-  },
-  {
-    id: 2,
-    title: 'Marketing Director | 12+ Years',
-    tags: ['Marketing', 'Strategy', 'Brand'],
-    expertise: 'Brand development, digital marketing, growth strategy, team management',
-    experience: '12 years',
-    industry: 'Marketing',
-    achievements: [
-      'Increased brand awareness by 300%',
-      'Built marketing team from scratch',
-      'Managed $5M annual budget',
-    ],
-  },
-  {
-    id: 3,
-    title: 'Data Science Lead | 7+ Years',
-    tags: ['Data', 'AI/ML', 'Analytics'],
-    expertise: 'Machine learning, data analytics, business intelligence, Python, SQL',
-    experience: '7 years',
-    industry: 'Technology',
-    achievements: [
-      'Built ML models improving efficiency by 40%',
-      'Led data transformation initiative',
-      'Published 3 research papers',
-    ],
-  },
-  {
-    id: 4,
-    title: 'HR Director | 10+ Years',
-    tags: ['HR', 'Leadership', 'DEI'],
-    expertise: 'Talent acquisition, organizational development, DEI initiatives',
-    experience: '10 years',
-    industry: 'Human Resources',
-    achievements: [
-      'Reduced turnover by 35%',
-      'Implemented DEI program reaching 500+ employees',
-      'Built leadership development pipeline',
-    ],
-  },
-  {
-    id: 5,
-    title: 'VP of Engineering | 15+ Years',
-    tags: ['Tech', 'Engineering', 'Leadership'],
-    expertise: 'Software engineering, team scaling, technical strategy, cloud architecture',
-    experience: '15 years',
-    industry: 'Technology',
-    achievements: [
-      'Scaled engineering team from 10 to 100',
-      'Led cloud migration saving $1M annually',
-      'Built high-performance engineering culture',
-    ],
-  },
-  {
-    id: 6,
-    title: 'Director of Operations | 14+ Years',
-    tags: ['Operations', 'Strategy', 'Leadership'],
-    expertise: 'Operational excellence, process optimization, supply chain, P&L management',
-    experience: '14 years',
-    industry: 'Manufacturing',
-    achievements: [
-      'Improved operational efficiency by 25%',
-      'Managed $50M P&L',
-      'Led 3 successful M&A integrations',
-    ],
-  },
-  {
-    id: 7,
-    title: 'Chief Financial Officer | 18+ Years',
-    tags: ['Finance', 'Leadership', 'Strategy'],
-    expertise: 'Financial planning, M&A, investor relations, strategic planning',
-    experience: '18 years',
-    industry: 'Finance',
-    achievements: [
-      'Led 2 successful IPOs',
-      'Managed $500M portfolio',
-      'Reduced operating costs by 20%',
-    ],
-  },
-  {
-    id: 8,
-    title: 'Legal Counsel | 9+ Years',
-    tags: ['Legal', 'Compliance', 'Strategy'],
-    expertise: 'Corporate law, regulatory compliance, contract negotiation, risk management',
-    experience: '9 years',
-    industry: 'Legal',
-    achievements: [
-      'Negotiated $100M+ in contracts',
-      'Built compliance framework',
-      'Led successful litigation defense',
-    ],
-  },
-];
 
 const industries = ['All', 'Technology', 'Finance', 'Marketing', 'Human Resources', 'Manufacturing', 'Legal'];
 
@@ -133,13 +29,62 @@ const TalentPool = () => {
   const [passwordError, setPasswordError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('All');
-  const [selectedTalent, setSelectedTalent] = useState<typeof allTalents[0] | null>(null);
+  const [selectedTalent, setSelectedTalent] = useState<TalentProfile | null>(null);
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [talents, setTalents] = useState<TalentProfile[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
   const navigate = useNavigate();
 
   const CORRECT_PASSWORD = 'sponsor2024';
+
+  // Fetch approved talent from database
+  const fetchTalents = async () => {
+    setIsDataLoading(true);
+    setError(null);
+    setDebugInfo('');
+    
+    try {
+      console.log('[TalentPool] Fetching approved talent...');
+      const result = await listTalent({
+        filters: { status: 'approved' },
+        pagination: { page: 1, perPage: 100 }
+      });
+      
+      console.log('[TalentPool] Result:', result);
+      
+      if (result.error) {
+        console.error('Error fetching talents:', result.error);
+        setError(`Failed to load talent profiles: ${result.error.message}`);
+        setDebugInfo(`Error: ${result.error.message}`);
+        toast.error('Failed to load talent profiles');
+      } else {
+        const data = result.data || [];
+        setTalents(data);
+        setDebugInfo(`Found ${data.length} approved talent profiles`);
+        
+        if (data.length === 0) {
+          setError('No approved talent profiles found in the database.');
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching talents:', err);
+      const errMsg = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Failed to load talent profiles: ${errMsg}`);
+      setDebugInfo(`Exception: ${errMsg}`);
+      toast.error('Failed to load talent profiles');
+    } finally {
+      setIsDataLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchTalents();
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -168,13 +113,12 @@ const TalentPool = () => {
     }, sectionRef);
 
     return () => ctx.revert();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, talents]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === CORRECT_PASSWORD) {
       setIsLoading(true);
-      // Simulate API call
       setTimeout(() => {
         setIsAuthenticated(true);
         setPasswordError('');
@@ -185,18 +129,61 @@ const TalentPool = () => {
     }
   };
 
-  const filteredTalents = allTalents.filter((talent) => {
+  // Filter talents based on search and industry
+  const filteredTalents = talents.filter((talent) => {
     const matchesSearch =
-      talent.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      talent.expertise.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      talent.achievements.some(a => a.toLowerCase().includes(searchQuery.toLowerCase()));
+      (talent.headline?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (talent.bio?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (talent.skills || []).some(s => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (talent.role_category?.toLowerCase() || '').includes(searchQuery.toLowerCase());
     const matchesIndustry = selectedIndustry === 'All' || talent.industry === selectedIndustry;
     return matchesSearch && matchesIndustry;
   });
 
-  const handleRequestIntroduction = (talent: typeof allTalents[0]) => {
+  const handleRequestIntroduction = (talent: TalentProfile) => {
     setSelectedTalent(talent);
     setRequestDialogOpen(true);
+  };
+
+  // Helper to get display title for talent (anonymized)
+  const getTalentDisplayTitle = (talent: TalentProfile): string => {
+    if (talent.headline) return talent.headline;
+    if (talent.role_category && talent.years_of_experience) {
+      return `${talent.role_category} | ${talent.years_of_experience}`;
+    }
+    return 'Professional Profile';
+  };
+
+  // Helper to get tags for talent
+  const getTalentTags = (talent: TalentProfile): string[] => {
+    const tags: string[] = [];
+    if (talent.industry) tags.push(talent.industry);
+    if (talent.role_category) tags.push(talent.role_category);
+    if (talent.seniority_level) tags.push(talent.seniority_level);
+    return tags.slice(0, 3);
+  };
+
+  // Helper to get expertise description
+  const getTalentExpertise = (talent: TalentProfile): string => {
+    if (talent.bio) {
+      return talent.bio.length > 100 ? talent.bio.substring(0, 100) + '...' : talent.bio;
+    }
+    if (talent.skills && talent.skills.length > 0) {
+      return talent.skills.slice(0, 5).join(', ');
+    }
+    return 'Experienced professional seeking new opportunities';
+  };
+
+  // Helper to get achievements
+  const getTalentAchievements = (talent: TalentProfile): string[] => {
+    // Try to parse bio for achievements or use skills as fallback
+    if (talent.seeking_roles && talent.seeking_roles.length > 0) {
+      return talent.seeking_roles.slice(0, 3);
+    }
+    if (talent.skills && talent.skills.length > 0) {
+      return talent.skills.slice(0, 3);
+    }
+    return ['Experienced professional', 'Available for opportunities', 'Verified by Recommend Her'];
   };
 
   if (!isAuthenticated) {
@@ -290,15 +277,33 @@ const TalentPool = () => {
               leadership opportunity. Profiles are anonymized to prevent bias.
             </p>
           </div>
-          <div className="mt-6 lg:mt-0">
+          <div className="mt-6 lg:mt-0 flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchTalents}
+              disabled={isDataLoading}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isDataLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
             <span style={{ backgroundColor: "hsl(var(--primary))" }} className="inline-flex items-center gap-2 px-4 py-2 /10 rounded-full">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <span style={{ color: "hsl(var(--foreground))" }} className="font-serif text-sm ">
-                {allTalents.length} talents available
+                {filteredTalents.length} talents available
               </span>
             </span>
           </div>
         </div>
+
+        {/* Debug Info (visible during development) */}
+        {(debugInfo || error) && (
+          <div className="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
+            <p className="text-sm text-blue-800">
+              <strong>Debug:</strong> {debugInfo || error}
+            </p>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -306,7 +311,7 @@ const TalentPool = () => {
             <Search style={{ color: "hsl(var(--primary))" }} className="absolute left-4 top-1/2 -translate-y-1/2 " size={20} />
             <Input
               type="text"
-              placeholder="Search by title, expertise, or achievements..."
+              placeholder="Search by role, expertise, or skills..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-12 h-12 border-navy/20 focus:border-coral focus:ring-coral/20
@@ -334,11 +339,27 @@ const TalentPool = () => {
 
         {/* Talent Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {isLoading ? (
+          {isDataLoading ? (
             // Show skeleton loaders while loading
             Array.from({ length: 8 }).map((_, index) => (
               <TalentCardSkeleton key={index} />
             ))
+          ) : filteredTalents.length === 0 ? (
+            <div className="col-span-full text-center py-16">
+              <p style={{ color: "hsl(var(--foreground))" }} className="font-sans text-lg /60 mb-4">
+                {error || 'No talents found matching your criteria.'}
+              </p>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedIndustry('All');
+                }}
+                style={{ color: "hsl(var(--foreground))" }} className="mt-4  hover: font-serif font-semibold
+                       transition-colors duration-200"
+              >
+                Clear filters
+              </button>
+            </div>
           ) : (
             filteredTalents.map((talent, index) => (
             <div
@@ -355,8 +376,8 @@ const TalentPool = () => {
                   <User size={40} className="text-white/60" />
                 </div>
                 <div className="absolute bottom-4 left-4 right-4">
-                  <p className="font-serif text-sm font-bold text-white">
-                    {talent.title}
+                  <p className="font-serif text-sm font-bold text-white truncate">
+                    {getTalentDisplayTitle(talent)}
                   </p>
                 </div>
               </div>
@@ -365,7 +386,7 @@ const TalentPool = () => {
               <div className="p-5">
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {talent.tags.slice(0, 2).map((tag) => (
+                  {getTalentTags(talent).slice(0, 2).map((tag) => (
                     <span
                       key={tag}
                       style={{ color: "hsl(var(--primary))" }} className="px-3 py-1 /10  text-xs font-serif 
@@ -374,24 +395,24 @@ const TalentPool = () => {
                       {tag}
                     </span>
                   ))}
-                  {talent.tags.length > 2 && (
+                  {getTalentTags(talent).length > 2 && (
                     <span style={{ color: "hsl(var(--foreground))" }} className="px-3 py-1 /10  text-xs font-serif 
                                    font-medium rounded-full">
-                      +{talent.tags.length - 2}
+                      +{getTalentTags(talent).length - 2}
                     </span>
                   )}
                 </div>
 
                 {/* Expertise */}
                 <p style={{ color: "hsl(var(--foreground))" }} className="font-sans text-sm /60 line-clamp-2 mb-4">
-                  {talent.expertise}
+                  {getTalentExpertise(talent)}
                 </p>
 
                 {/* Key Achievements */}
                 <div className="mb-4">
-                  <p style={{ color: "hsl(var(--foreground))" }} className="font-serif text-xs font-semibold  mb-2">Key Achievements:</p>
+                  <p style={{ color: "hsl(var(--foreground))" }} className="font-serif text-xs font-semibold  mb-2">Highlights:</p>
                   <ul className="space-y-1">
-                    {talent.achievements.slice(0, 2).map((achievement, i) => (
+                    {getTalentAchievements(talent).slice(0, 2).map((achievement, i) => (
                       <li key={i} style={{ color: "hsl(var(--foreground))" }} className="font-sans text-xs /50 line-clamp-1">
                         • {achievement}
                       </li>
@@ -401,7 +422,7 @@ const TalentPool = () => {
 
                 <div className="flex items-center justify-between">
                   <span style={{ color: "hsl(var(--foreground))" }} className="font-serif text-xs /40">
-                    {talent.experience} exp
+                    {talent.years_of_experience || talent.years_experience ? `${talent.years_of_experience || talent.years_experience} exp` : 'Experienced'}
                   </span>
                   <button
                     onClick={(e) => {
@@ -424,25 +445,6 @@ const TalentPool = () => {
             ))
           )}
         </div>
-
-        {/* Empty State */}
-        {filteredTalents.length === 0 && (
-          <div className="text-center py-16">
-            <p style={{ color: "hsl(var(--foreground))" }} className="font-sans text-lg /60">
-              No talents found matching your criteria.
-            </p>
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedIndustry('All');
-              }}
-              style={{ color: "hsl(var(--foreground))" }} className="mt-4  hover: font-serif font-semibold
-                       transition-colors duration-200"
-            >
-              Clear filters
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Request Introduction Dialog */}
@@ -463,10 +465,10 @@ const TalentPool = () => {
               </div>
               <div>
                 <h4 style={{ color: "hsl(var(--foreground))" }} className="font-serif text-lg font-bold ">
-                  {selectedTalent?.title}
+                  {selectedTalent ? getTalentDisplayTitle(selectedTalent) : 'Talent Profile'}
                 </h4>
                 <p style={{ color: "hsl(var(--foreground))" }} className="font-sans text-sm /60">
-                  {selectedTalent?.industry} • {selectedTalent?.experience}
+                  {selectedTalent?.industry} • {selectedTalent?.years_of_experience || selectedTalent?.years_experience}
                 </p>
               </div>
             </div>
