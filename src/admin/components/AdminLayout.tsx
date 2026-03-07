@@ -7,7 +7,6 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
-  Building2,
   FileText,
   MessageSquare,
   Mail,
@@ -98,11 +97,7 @@ export function AdminLayout({
       icon: Users,
       badge: metrics?.talent?.pending || 0,
     },
-    {
-      path: '/admin/sponsors',
-      label: 'Sponsors',
-      icon: Building2,
-    },
+    // Note: /admin/sponsors removed - using /admin/sponsor-showcase instead
     {
       path: '/admin/blog',
       label: 'Blog',
