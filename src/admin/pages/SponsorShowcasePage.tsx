@@ -38,13 +38,14 @@ import {
   toggleSponsorShowcaseFeatured,
   getSponsorShowcaseStats,
 } from '@/lib/queries/sponsorShowcase';
-import { uploadFile } from '@/lib/queries/storage';
+import { uploadFile } from '@/lib/storage';
 import type { SponsorShowcase } from '@/lib/types/db';
 
 export default function SponsorShowcasePage() {
   const navigate = useNavigate();
   const [sponsors, setSponsors] = useState<SponsorShowcase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tableExists, setTableExists] = useState(true);
   const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, featured: 0 });
   
   // Dialog states
@@ -72,9 +73,19 @@ export default function SponsorShowcasePage() {
     setLoading(true);
     const { data, error } = await listSponsorShowcase();
     if (error) {
-      toast.error('Failed to load sponsors');
+      // Check if error is because table doesn't exist
+      if (error.message?.includes('does not exist') || error.message?.includes('404') || error.code === '404') {
+        setTableExists(false);
+        toast.error('Database table not found. Please run the migration first.', {
+          description: 'See SPONSOR_SHOWCASE_MIGRATION.md for instructions',
+          duration: 5000,
+        });
+      } else {
+        toast.error('Failed to load sponsors');
+      }
     } else {
       setSponsors(data);
+      setTableExists(true);
     }
     
     // Load stats
@@ -424,6 +435,25 @@ export default function SponsorShowcasePage() {
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      ) : !tableExists ? (
+        <div className="text-center py-12 bg-amber-50 rounded-2xl border border-amber-200">
+          <ImageIcon className="w-12 h-12 mx-auto text-amber-500 mb-4" />
+          <h3 className="text-lg font-medium text-amber-800">Database Migration Required</h3>
+          <p className="text-amber-700 mt-2 max-w-md mx-auto">
+            The sponsor_showcase table doesn't exist yet. Please run the migration SQL to set up the database.
+          </p>
+          <div className="mt-4 p-4 bg-white rounded-lg text-left max-w-lg mx-auto">
+            <p className="text-sm font-medium text-gray-700 mb-2">Migration file:</p>
+            <code className="text-xs bg-gray-100 p-2 rounded block">migrations/023_sponsor_showcase.sql</code>
+            <p className="text-sm font-medium text-gray-700 mt-4 mb-2">Instructions:</p>
+            <ol className="text-sm text-gray-600 list-decimal list-inside space-y-1">
+              <li>Go to InsForge Dashboard SQL Editor</li>
+              <li>Copy the migration SQL</li>
+              <li>Run the SQL</li>
+              <li>Refresh this page</li>
+            </ol>
+          </div>
         </div>
       ) : sponsors.length === 0 ? (
         <div className="text-center py-12">
