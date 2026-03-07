@@ -24,6 +24,7 @@ import {
   Sun,
   Moon,
   Quote,
+  Award,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -120,6 +121,7 @@ export function AdminLayout({
       badge: unreadCount > 0 ? unreadCount : undefined,
     },
     { path: '/admin/testimonials', label: 'Testimonials', icon: Quote },
+    { path: '/admin/sponsor-showcase', label: 'Sponsor Showcase', icon: Award },
     { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   ];
 
