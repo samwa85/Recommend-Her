@@ -291,14 +291,11 @@ ON CONFLICT DO NOTHING;
 -- STORAGE BUCKET SETUP
 -- ============================================================================
 
--- Create storage bucket for sponsor images (using minimal columns)
-INSERT INTO storage.buckets (id, name, public)
-VALUES (
-    'sponsor-images',
-    'sponsor-images',
-    true
-)
-ON CONFLICT (id) DO NOTHING;
+-- Create storage bucket for sponsor images
+-- Note: If INSERT fails, create the bucket manually in the Storage dashboard
+INSERT INTO storage.buckets (name)
+VALUES ('sponsor-images')
+ON CONFLICT (name) DO NOTHING;
 
 -- Policy: Allow public read access to sponsor images
 DROP POLICY IF EXISTS "Public can view sponsor images" ON storage.objects;
