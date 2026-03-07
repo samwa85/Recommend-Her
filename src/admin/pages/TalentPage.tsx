@@ -80,6 +80,7 @@ import { SkeletonTable } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { useTalentList, useTalentDetail } from '../hooks/useAdminData';
 import { getTalentCVUrl } from '@/lib/queries/files';
+import { updateTalentStatus as updateTalentStatusQuery, deleteTalent as deleteTalentQuery } from '@/lib/queries';
 import { formatDate, formatRelativeTime } from '@/lib/format/date';
 import { TalentStatus, TALENT_STATUS_LABELS } from '@/lib/types/enums';
 import type { TalentProfile } from '@/lib/types/db';
@@ -373,21 +374,39 @@ export default function TalentPage() {
     
     toast.promise(
       async () => {
-        // In real implementation, you'd batch these
-        // Process ids: ids.forEach(id => { ... })
+        const results = await Promise.allSettled(
+          ids.map((id) => {
+            if (bulkAction === 'delete') return deleteTalentQuery(id);
+            if (bulkAction === 'approve') return updateTalentStatusQuery(id, TalentStatus.APPROVED);
+            if (bulkAction === 'reject') return updateTalentStatusQuery(id, TalentStatus.REJECTED);
+            return updateTalentStatusQuery(id, TalentStatus.ARCHIVED);
+          })
+        );
+
+        const successCount = results.filter((result) => {
+          if (result.status === 'rejected') return false;
+          const value = result.value as { success?: boolean; error?: Error | null };
+          if ('success' in value) return value.success === true;
+          return value.error == null;
+        }).length;
+
+        if (successCount === 0) {
+          throw new Error('No talent records were updated');
+        }
+
         setSelectedRows(new Set());
         setSelectAll(false);
         setBulkActionDialogOpen(false);
         refresh();
-        return `${ids.length} talents updated`;
+        return `${successCount} talents updated`;
       },
       {
         loading: 'Processing...',
-        success: `Updated ${ids.length} talents`,
-        error: 'Some updates failed',
+        success: 'Bulk action completed',
+        error: 'Bulk action failed',
       }
     );
-  }, [selectedRows, refresh]);
+  }, [selectedRows, bulkAction, refresh]);
 
   // ============================================================================
   // RENDER HELPERS

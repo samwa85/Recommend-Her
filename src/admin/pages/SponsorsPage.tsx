@@ -77,6 +77,7 @@ import { AdminLayout } from '../components/AdminLayout';
 import { SkeletonTable } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { useSponsorList, useSponsorDetail } from '../hooks/useAdminData';
+import { updateSponsorStatus as updateSponsorStatusQuery, deleteSponsor as deleteSponsorQuery } from '@/lib/queries';
 import { formatDate, formatRelativeTime } from '@/lib/format/date';
 import { SponsorStatus, SPONSOR_STATUS_LABELS } from '@/lib/types/enums';
 import type { SponsorProfile } from '@/lib/types/db';
@@ -323,20 +324,39 @@ export default function SponsorsPage() {
     
     toast.promise(
       async () => {
-        // In real implementation, you'd batch these
+        const results = await Promise.allSettled(
+          ids.map((id) => {
+            if (bulkAction === 'delete') return deleteSponsorQuery(id);
+            if (bulkAction === 'activate') return updateSponsorStatusQuery(id, SponsorStatus.ACTIVE);
+            if (bulkAction === 'deactivate') return updateSponsorStatusQuery(id, SponsorStatus.INACTIVE);
+            return updateSponsorStatusQuery(id, SponsorStatus.ARCHIVED);
+          })
+        );
+
+        const successCount = results.filter((result) => {
+          if (result.status === 'rejected') return false;
+          const value = result.value as { success?: boolean; error?: Error | null };
+          if ('success' in value) return value.success === true;
+          return value.error == null;
+        }).length;
+
+        if (successCount === 0) {
+          throw new Error('No sponsor records were updated');
+        }
+
         setSelectedRows(new Set());
         setSelectAll(false);
         setBulkActionDialogOpen(false);
         refresh();
-        return `${ids.length} sponsors updated`;
+        return `${successCount} sponsors updated`;
       },
       {
         loading: 'Processing...',
-        success: `Updated ${ids.length} sponsors`,
-        error: 'Some updates failed',
+        success: 'Bulk action completed',
+        error: 'Bulk action failed',
       }
     );
-  }, [selectedRows, refresh]);
+  }, [selectedRows, bulkAction, refresh]);
 
   // ============================================================================
   // RENDER HELPERS

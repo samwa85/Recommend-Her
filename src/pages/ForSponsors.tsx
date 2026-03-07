@@ -181,7 +181,7 @@ const ForSponsors = () => {
       });
 
       // Insert into sponsor_profiles table using InsForge
-      // Using column names that match the admin dashboard expectations
+      // Using column names matching the database schema
       const { data: sponsorData, error: insertError } = await db
         .from('sponsor_profiles')
         .insert({
@@ -189,17 +189,15 @@ const ForSponsors = () => {
           email: formData.email.trim().toLowerCase(),
           job_title: formData.title.trim() || null,
           phone: formData.phone.trim() || null,
-          company_name: formData.company.trim(),
+          organization: formData.company.trim(),
           linkedin_url: formData.linkedin.trim() || null,
           industry: formData.industry || null,
+          sponsor_type: 'company',
           // Map sponsor type to focus_areas
           focus_areas: formData.sponsorType ? [formData.sponsorType] : [],
-          message: formData.commitmentNote.trim() || null,
-          // InsForge specific fields
-          status: 'pending',
-          gdpr_consent: true,
-          is_recruiter: false,
-          source: 'for-sponsors-page',
+          notes_admin: formData.commitmentNote.trim() || null,
+          // Database schema fields (active, inactive, or archived)
+          status: 'active',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })

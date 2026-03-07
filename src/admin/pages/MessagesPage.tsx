@@ -165,6 +165,7 @@ export default function MessagesPage() {
     replies: messageReplies,
     updateStatus,
     addReply,
+    remove,
   } = useMessageDetail(selectedMessageId);
 
   // ============================================================================
@@ -264,12 +265,27 @@ export default function MessagesPage() {
   }, [replyText, addReply, refresh]);
 
   const handleDelete = useCallback(async () => {
-    setDeleteDialogOpen(false);
-    setDetailOpen(false);
-    setSelectedMessageId(null);
-    toast.success('Message deleted');
-    refresh();
-  }, [refresh]);
+    if (!selectedMessageId) return;
+
+    toast.promise(
+      async () => {
+        const result = await remove();
+        if (result.success) {
+          setDeleteDialogOpen(false);
+          setDetailOpen(false);
+          setSelectedMessageId(null);
+          refresh();
+          return 'Message deleted';
+        }
+        throw result.error || new Error('Failed to delete message');
+      },
+      {
+        loading: 'Deleting...',
+        success: 'Message deleted successfully',
+        error: 'Failed to delete message',
+      }
+    );
+  }, [selectedMessageId, remove, refresh]);
 
   // ============================================================================
   // RENDER HELPERS

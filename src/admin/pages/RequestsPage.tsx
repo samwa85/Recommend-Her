@@ -201,6 +201,7 @@ export default function RequestsPage() {
   const { 
     data: selectedRequest,
     updateStatus,
+    remove,
   } = useRequestDetail(selectedRequestId);
 
   // ============================================================================
@@ -270,13 +271,27 @@ export default function RequestsPage() {
   }, [updateStatus, refresh]);
 
   const handleDelete = useCallback(async () => {
-    // Delete functionality would be implemented here
-    setDeleteDialogOpen(false);
-    setDetailOpen(false);
-    setSelectedRequestId(null);
-    toast.success('Request deleted');
-    refresh();
-  }, [refresh]);
+    if (!selectedRequestId) return;
+
+    toast.promise(
+      async () => {
+        const result = await remove();
+        if (result.success) {
+          setDeleteDialogOpen(false);
+          setDetailOpen(false);
+          setSelectedRequestId(null);
+          refresh();
+          return 'Request deleted';
+        }
+        throw result.error || new Error('Failed to delete request');
+      },
+      {
+        loading: 'Deleting...',
+        success: 'Request deleted successfully',
+        error: 'Failed to delete request',
+      }
+    );
+  }, [selectedRequestId, remove, refresh]);
 
   // ============================================================================
   // RENDER HELPERS

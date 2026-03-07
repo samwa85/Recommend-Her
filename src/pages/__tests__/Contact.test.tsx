@@ -69,9 +69,9 @@ describe('Contact Page', () => {
     expect(screen.getByText('Email')).toBeInTheDocument();
     expect(screen.getByText('hello@recommendher.africa')).toBeInTheDocument();
     expect(screen.getByText('Phone')).toBeInTheDocument();
-    expect(screen.getByText('+1 (555) 123-4567')).toBeInTheDocument();
+    expect(screen.getByText('+255 789 990 330')).toBeInTheDocument();
     expect(screen.getByText('Location')).toBeInTheDocument();
-    expect(screen.getByText('New York, NY')).toBeInTheDocument();
+    expect(screen.getByText('Dar es Salaam, Tanzania')).toBeInTheDocument();
 
     // Check form
     expect(screen.getByText('Send us a Message')).toBeInTheDocument();

@@ -29,9 +29,11 @@ import {
   listRequests,
   getRequestById,
   updateRequestStatus,
+  deleteRequest,
   listMessages,
   getMessageById,
   updateMessageStatus,
+  deleteMessage,
   getMessageStatusCounts,
   getUnreadMessagesCount,
   getDashboardMetrics,
@@ -481,10 +483,16 @@ export function useRequestDetail(id: string | null) {
     }
   }, [id]);
 
+  const remove = useCallback(async () => {
+    if (!id) return { success: false, error: new Error('No request ID') };
+    return deleteRequest(id);
+  }, [id]);
+
   return {
     data,
     isLoading,
     updateStatus,
+    remove,
     refresh: async () => {
       if (id) {
         const result = await getRequestById(id);
@@ -647,12 +655,18 @@ export function useMessageDetail(id: string | null) {
     }
   }, [id]);
 
+  const remove = useCallback(async () => {
+    if (!id) return { success: false, error: new Error('No message ID') };
+    return deleteMessage(id);
+  }, [id]);
+
   return {
     data,
     isLoading,
     replies,
     updateStatus,
     addReply,
+    remove,
     refresh: async () => {
       if (id) {
         const [msgResult, repliesResult] = await Promise.all([

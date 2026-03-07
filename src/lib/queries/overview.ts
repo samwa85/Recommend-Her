@@ -89,13 +89,13 @@ export async function getDashboardMetrics(): Promise<
         db.from('requests').select('*', { count: 'exact', head: true }).eq('priority', 'urgent'),
       ]);
 
-    // Message counts
+    // Message counts (contact form submissions)
     const [messageTotal, messageUnread, messageReplied, messageToday] =
       await Promise.all([
-        db.from('messages').select('*', { count: 'exact', head: true }),
-        db.from('messages').select('*', { count: 'exact', head: true }).eq('status', 'unread'),
-        db.from('messages').select('*', { count: 'exact', head: true }).eq('status', 'replied'),
-        db.from('messages').select('*', { count: 'exact', head: true }).gte('created_at', today),
+        db.from('contact_submissions').select('*', { count: 'exact', head: true }),
+        db.from('contact_submissions').select('*', { count: 'exact', head: true }).eq('status', 'new'),
+        db.from('contact_submissions').select('*', { count: 'exact', head: true }).eq('status', 'replied'),
+        db.from('contact_submissions').select('*', { count: 'exact', head: true }).gte('created_at', today),
       ]);
 
     const metrics: DashboardMetrics = {
@@ -249,11 +249,11 @@ export async function getRecentActivity(
         .order('created_at', { ascending: false })
         .limit(limit),
       db.from('sponsor_profiles')
-        .select('id, full_name, organization, status, created_at')
+        .select('id, full_name, company_name, status, created_at')
         .order('created_at', { ascending: false })
         .limit(limit),
-      db.from('messages')
-        .select('id, sender_name, subject, status, created_at')
+      db.from('contact_submissions')
+        .select('id, full_name, inquiry_type, status, created_at')
         .order('created_at', { ascending: false })
         .limit(limit),
       db.from('requests')
@@ -276,23 +276,23 @@ export async function getRecentActivity(
       });
     });
 
-    sponsorRes.data?.forEach((item: { id: string; full_name: string; organization?: string; status: string; created_at: string }) => {
+    sponsorRes.data?.forEach((item: { id: string; full_name: string; company_name?: string; status: string; created_at: string }) => {
       activities.push({
         id: `sponsor-${item.id}`,
         type: 'sponsor',
         title: item.full_name,
-        description: item.organization ? `From ${item.organization}` : 'New sponsor',
+        description: item.company_name ? `From ${item.company_name}` : 'New sponsor',
         status: item.status,
         created_at: item.created_at,
       });
     });
 
-    messageRes.data?.forEach((item: { id: string; sender_name: string; subject?: string; status: string; created_at: string }) => {
+    messageRes.data?.forEach((item: { id: string; full_name: string; inquiry_type?: string; status: string; created_at: string }) => {
       activities.push({
         id: `message-${item.id}`,
         type: 'message',
-        title: item.sender_name,
-        description: item.subject || 'New message',
+        title: item.full_name,
+        description: item.inquiry_type || 'New message',
         status: item.status,
         created_at: item.created_at,
       });

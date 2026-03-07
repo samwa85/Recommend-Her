@@ -479,13 +479,11 @@ export async function addMessageReply(
 
     if (replyError) throw replyError;
 
-    // Update submission status
+    // Update submission status (keep this minimal so it works across schema variants)
     const { error: updateError } = await db
       .from('contact_submissions')
       .update({
         status: 'replied',
-        admin_reply: replyText,
-        replied_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('id', submissionId);
