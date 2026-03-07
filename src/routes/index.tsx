@@ -29,6 +29,7 @@ const SettingsPage = lazy(() => import('@/admin/pages/SettingsPage'));
 const LoginPage = lazy(() => import('@/admin/pages/LoginPage'));
 const BlogPage = lazy(() => import('@/admin/pages/BlogPage'));
 const TestimonialsPage = lazy(() => import('@/admin/pages/TestimonialsPage'));
+const SponsorShowcasePage = lazy(() => import('@/admin/pages/SponsorShowcasePage'));
 
 // Legacy Admin (for backward compatibility)
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
@@ -71,6 +72,9 @@ const ProtectedBlog = () => (
 const ProtectedTestimonials = () => (
   <ProtectedRoute><TestimonialsPage /></ProtectedRoute>
 );
+const ProtectedSponsorShowcase = () => (
+  <ProtectedRoute><SponsorShowcasePage /></ProtectedRoute>
+);
 
 // Route definitions
 export const routes: RouteObject[] = [
@@ -98,6 +102,7 @@ export const routes: RouteObject[] = [
   { path: '/admin/settings', element: <ProtectedSettings /> },
   { path: '/admin/blog', element: <ProtectedBlog /> },
   { path: '/admin/testimonials', element: <ProtectedTestimonials /> },
+  { path: '/admin/sponsor-showcase', element: <ProtectedSponsorShowcase /> },
   
   // Login (Public)
   { path: '/admin/login', element: <LoginPage /> },
@@ -125,5 +130,6 @@ export const adminNavLinks = [
   { path: '/admin/requests', label: 'Requests', icon: 'MessageSquare' },
   { path: '/admin/messages', label: 'Messages', icon: 'Mail' },
   { path: '/admin/testimonials', label: 'Testimonials', icon: 'Quote' },
+  { path: '/admin/sponsor-showcase', label: 'Sponsor Showcase', icon: 'Award' },
   { path: '/admin/analytics', label: 'Analytics', icon: 'BarChart3' },
 ];

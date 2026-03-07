@@ -120,6 +120,22 @@ export interface MessageRow {
   replied_at: string | null;
 }
 
+export interface SponsorShowcaseRow {
+  id: string;
+  name: string;
+  title: string;
+  company: string | null;
+  bio: string;
+  image_path: string | null;
+  image_url: string | null;
+  linkedin_url: string | null;
+  is_active: boolean;
+  display_order: number;
+  featured: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface FileRow {
   id: string;
   owner_type: string;
@@ -144,6 +160,7 @@ export type SponsorProfile = SponsorProfileRow;
 export type Request = RequestRow;
 export type Message = MessageRow;
 export type FileRecord = FileRow;
+export type SponsorShowcase = SponsorShowcaseRow;
 
 // ============================================================================
 // INSERT TYPES (for create operations)
@@ -169,6 +186,11 @@ export type MessageInput = Omit<
   'id' | 'created_at' | 'updated_at' | 'replied_at' | 'handled_by_admin_id' | 'admin_reply'
 >;
 
+export type SponsorShowcaseInput = Omit<
+  SponsorShowcaseRow,
+  'id' | 'created_at' | 'updated_at'
+>;
+
 export type FileInput = Omit<
   FileRow,
   'id' | 'created_at' | 'updated_at' | 'public_url'
@@ -189,6 +211,8 @@ export type SponsorProfileUpdate = Partial<
 export type RequestUpdate = Partial<Omit<RequestRow, 'id' | 'created_at'>>;
 
 export type MessageUpdate = Partial<Omit<MessageRow, 'id' | 'created_at'>>;
+
+export type SponsorShowcaseUpdate = Partial<Omit<SponsorShowcaseRow, 'id' | 'created_at'>>;
 
 export type FileUpdate = Partial<Omit<FileRow, 'id' | 'created_at'>>;
 
