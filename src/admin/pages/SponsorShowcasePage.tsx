@@ -72,17 +72,16 @@ export default function SponsorShowcasePage() {
   const loadSponsors = useCallback(async () => {
     setLoading(true);
     const { data, error } = await listSponsorShowcase();
+    
     if (error) {
-      // Check if error is because table doesn't exist
-      if (error.message?.includes('does not exist') || error.message?.includes('404') || error.code === '404') {
-        setTableExists(false);
-        toast.error('Database table not found. Please run the migration first.', {
-          description: 'See SPONSOR_SHOWCASE_MIGRATION.md for instructions',
-          duration: 5000,
-        });
-      } else {
-        toast.error('Failed to load sponsors');
-      }
+      console.log('[SponsorShowcase] Load error:', error);
+      // Any error on initial load likely means table doesn't exist
+      // since this is a new feature
+      setTableExists(false);
+      toast.error('Database table not found. Please run the migration first.', {
+        description: 'See SPONSOR_SHOWCASE_MIGRATION.md for instructions',
+        duration: 5000,
+      });
     } else {
       setSponsors(data);
       setTableExists(true);
