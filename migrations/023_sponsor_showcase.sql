@@ -41,12 +41,14 @@ ON public.sponsor_showcase(featured) WHERE featured = true;
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION public.update_sponsor_showcase_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Create trigger for updated_at
 DROP TRIGGER IF EXISTS sponsor_showcase_updated_at ON public.sponsor_showcase;
