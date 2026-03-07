@@ -291,15 +291,14 @@ ON CONFLICT DO NOTHING;
 -- STORAGE BUCKET SETUP
 -- ============================================================================
 
--- Create storage bucket for sponsor images
-INSERT INTO storage.buckets (name, public, file_size_limit, allowed_mime_types)
+-- Create storage bucket for sponsor images (using minimal columns)
+INSERT INTO storage.buckets (id, name, public)
 VALUES (
     'sponsor-images',
-    true,
-    5242880, -- 5MB
-    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    'sponsor-images',
+    true
 )
-ON CONFLICT (name) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- Policy: Allow public read access to sponsor images
 DROP POLICY IF EXISTS "Public can view sponsor images" ON storage.objects;
