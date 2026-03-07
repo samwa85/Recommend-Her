@@ -33,8 +33,7 @@
         <div class="flex flex-wrap justify-center gap-4 reveal" style="transition-delay: 300ms;">
             <a
                 href="{{ url('/for-talent') }}"
-                class="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-bold text-lg transition-all duration-300 hover:-translate-y-1 hover:scale-105"
-                style="background-color: #ffffff; color: #1e1b4b; box-shadow: 0 8px 30px rgba(255, 255, 255, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2); border: 2px solid #ffffff;"
+                class="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-bold text-lg text-white transition-all duration-300 border-2 border-white bg-transparent hover:bg-white/10 hover:-translate-y-1 hover:scale-105"
             >
                 Submit Your CV
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300 group-hover:translate-x-1">
@@ -44,8 +43,7 @@
             </a>
             <a
                 href="{{ url('/for-sponsors') }}"
-                class="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-bold text-lg transition-all duration-300 border-2 hover:-translate-y-1 hover:scale-105"
-                style="background-color: transparent; border-color: #ffffff; color: #ffffff; box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);"
+                class="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-bold text-lg text-white transition-all duration-300 border-2 border-white bg-white/10 hover:bg-white/20 hover:-translate-y-1 hover:scale-105"
             >
                 Become a Sponsor
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300 group-hover:translate-x-1">

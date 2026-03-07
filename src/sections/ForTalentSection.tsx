@@ -133,12 +133,7 @@ const ForTalentSection = () => {
 
               <Link
                 to="/for-talent"
-                className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-semibold transition-all duration-300 hover:-translate-y-1"
-                style={{ 
-                  backgroundColor: 'hsl(var(--primary))', 
-                  color: 'hsl(var(--primary-foreground))',
-                  boxShadow: 'var(--shadow)'
-                }}
+                className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-semibold text-white transition-all duration-300 border-2 border-white bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 hover:-translate-y-1"
               >
                 Submit Your Profile
                 <ArrowRight

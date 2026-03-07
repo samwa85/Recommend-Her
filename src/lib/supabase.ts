@@ -1,4 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+// ============================================================================
+// DATABASE CLIENT - Uses InsForge SDK (backward compatible with Supabase API)
+// ============================================================================
+
+import { getInsforgeClient, insforge, getDb, getAuth, getStorage } from './insforge/client';
 import type {
   Profile,
   TalentProfile,
@@ -23,14 +27,13 @@ import type {
   ActiveTestimonial,
 } from './database.types';
 
-const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'];
-const supabaseAnonKey = import.meta.env['VITE_SUPABASE_ANON_KEY'];
+// Re-export the InsForge client as 'supabase' for backward compatibility
+// This provides a Supabase-compatible API using InsForge SDK
+export { insforge as supabase, getInsforgeClient, getDb, getAuth, getStorage };
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please check your .env file.');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Re-export storage functions
+export { uploadFile, uploadFileAuto, deleteFile, downloadFile, getPublicUrl } from './insforge/client';
+export type { UploadFileOptions, UploadResult } from './insforge/client';
 
 // ============================================================================
 // TYPE EXPORTS
@@ -59,21 +62,21 @@ export type {
 // ============================================================================
 
 export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuth().getCurrentUser();
   return user;
 }
 
 export async function getCurrentProfile(): Promise<Profile | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuth().getCurrentUser();
   if (!user) return null;
   
-  const { data } = await supabase
+  const { data } = await getDb()
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single();
   
-  return data;
+  return data as Profile | null;
 }
 
 export async function isAdmin(): Promise<boolean> {
@@ -86,10 +89,10 @@ export async function isAdmin(): Promise<boolean> {
 // ============================================================================
 
 export async function submitTalentProfile(input: TalentProfileInput) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuth().getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase.rpc('submit_talent_profile', {
+  const { data, error } = await getDb().rpc('submit_talent_profile', {
     p_user_id: user.id,
     p_headline: input.headline,
     p_bio: input.bio || '',
@@ -107,16 +110,16 @@ export async function submitTalentProfile(input: TalentProfileInput) {
 }
 
 export async function getMyTalentProfile(): Promise<TalentProfile | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuth().getCurrentUser();
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data } = await getDb()
     .from('talent_profiles')
     .select('*')
     .eq('user_id', user.id)
     .single();
 
-  return data;
+  return data as TalentProfile | null;
 }
 
 export async function getApprovedTalent(options?: {
@@ -125,7 +128,7 @@ export async function getApprovedTalent(options?: {
   limit?: number;
   offset?: number;
 }) {
-  let query = supabase
+  let query = getDb()
     .from('v_public_talent_profiles')
     .select('*', { count: 'exact' });
 
@@ -151,10 +154,10 @@ export async function getApprovedTalent(options?: {
 // ============================================================================
 
 export async function createSponsorProfile(input: SponsorProfileInput) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuth().getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const { data, error } = await getDb()
     .from('sponsor_profiles')
     .insert({
       user_id: user.id,
@@ -168,16 +171,16 @@ export async function createSponsorProfile(input: SponsorProfileInput) {
 }
 
 export async function getMySponsorProfile(): Promise<SponsorProfile | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuth().getCurrentUser();
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data } = await getDb()
     .from('sponsor_profiles')
     .select('*')
     .eq('user_id', user.id)
     .single();
 
-  return data;
+  return data as SponsorProfile | null;
 }
 
 // ============================================================================
@@ -185,37 +188,37 @@ export async function getMySponsorProfile(): Promise<SponsorProfile | null> {
 // ============================================================================
 
 export async function getAdminMetrics(): Promise<AdminDashboardMetrics | null> {
-  const { data } = await supabase
+  const { data } = await getDb()
     .from('v_admin_dashboard_metrics')
     .select('*')
     .single();
   
-  return data;
+  return data as AdminDashboardMetrics | null;
 }
 
 export async function getPendingTalentReviews(): Promise<PendingTalentReview[]> {
-  const { data } = await supabase
+  const { data } = await getDb()
     .from('v_pending_talent_reviews')
     .select('*')
     .order('submitted_at', { ascending: true });
   
-  return data || [];
+  return (data || []) as PendingTalentReview[];
 }
 
 export async function getPendingSponsorApprovals(): Promise<PendingSponsorApproval[]> {
-  const { data } = await supabase
+  const { data } = await getDb()
     .from('v_pending_sponsor_approvals')
     .select('*')
     .order('created_at', { ascending: true });
   
-  return data || [];
+  return (data || []) as PendingSponsorApproval[];
 }
 
 export async function adminReviewTalent(
   talentId: string,
   input: AdminReviewInput
 ) {
-  const { data, error } = await supabase.rpc('admin_review_talent', {
+  const { data, error } = await getDb().rpc('admin_review_talent', {
     p_talent_id: talentId,
     p_decision: input.decision,
     p_feedback_to_talent: input.feedback_to_talent,
@@ -229,7 +232,7 @@ export async function adminReviewSponsor(
   sponsorId: string,
   decision: SponsorStatus
 ) {
-  const { data, error } = await supabase.rpc('admin_review_sponsor', {
+  const { data, error } = await getDb().rpc('admin_review_sponsor', {
     p_sponsor_id: sponsorId,
     p_decision: decision,
   });
@@ -244,7 +247,7 @@ export async function getAllTalent(options?: {
 }) {
   // Use LEFT JOIN to include talent even if profiles record is missing (anonymous)
   // This ensures we don't lose data due to missing profile records
-  let query = supabase
+  let query = getDb()
     .from('talent_profiles')
     .select(`
       *,
@@ -280,13 +283,13 @@ export async function getAllTalent(options?: {
 // Diagnostic function to check raw talent profile data
 export async function getTalentProfileDebug() {
   // Get raw talent_profiles without joins
-  const { data: rawTalent, error: rawError } = await supabase
+  const { data: rawTalent, error: rawError } = await getDb()
     .from('talent_profiles')
     .select('*')
     .limit(10);
   
   // Get count by status
-  const { data: statusCounts, error: countError } = await supabase
+  const { data: statusCounts, error: countError } = await getDb()
     .rpc('get_talent_status_counts');
   
   console.log('Raw talent_profiles sample:', rawTalent?.length, rawError);
@@ -300,7 +303,7 @@ export async function testDatabaseRecording() {
   console.log('🧪 [Test] Testing database recording...');
   
   // Count before
-  const { count: beforeCount } = await supabase
+  const { count: beforeCount } = await getDb()
     .from('talent_profiles')
     .select('*', { count: 'exact', head: true });
   
@@ -308,7 +311,7 @@ export async function testDatabaseRecording() {
   
   // Try to insert a test record
   const testId = `test-${Date.now()}`;
-  const { data: insertData, error: insertError } = await supabase.rpc('submit_talent_profile_anon', {
+  const { data: insertData, error: insertError } = await getDb().rpc('submit_talent_profile_anon', {
     p_full_name: 'Test User',
     p_email: `test-${testId}@example.com`,
     p_headline: 'Test Headline',
@@ -326,7 +329,7 @@ export async function testDatabaseRecording() {
   console.log('🧪 [Test] Insert result:', { data: insertData, error: insertError });
   
   // Count after
-  const { count: afterCount } = await supabase
+  const { count: afterCount } = await getDb()
     .from('talent_profiles')
     .select('*', { count: 'exact', head: true });
   
@@ -348,7 +351,7 @@ export async function getAllSponsors(options?: {
   limit?: number;
   offset?: number;
 }) {
-  let query = supabase
+  let query = getDb()
     .from('sponsor_profiles')
     .select(`
       *,
@@ -374,7 +377,7 @@ export async function getAuditLogs(options?: {
   offset?: number;
   action?: string;
 }) {
-  let query = supabase
+  let query = getDb()
     .from('audit_logs')
     .select(`
       *,
@@ -397,7 +400,7 @@ export async function getAuditLogs(options?: {
 
 export async function deleteTalentProfile(talentId: string) {
   // This will cascade delete related records due to FK constraints
-  const { error } = await supabase
+  const { error } = await getDb()
     .from('talent_profiles')
     .delete()
     .eq('id', talentId);
@@ -413,7 +416,7 @@ export async function createRecommendationRequest(
   talentId: string,
   message?: string
 ) {
-  const { data, error } = await supabase.rpc('create_recommendation_request', {
+  const { data, error } = await getDb().rpc('create_recommendation_request', {
     p_talent_id: talentId,
     p_message: message,
   });
@@ -425,7 +428,7 @@ export async function updateRequestStatus(
   requestId: string,
   status: RequestStatus
 ) {
-  const { data, error } = await supabase.rpc('update_request_status', {
+  const { data, error } = await getDb().rpc('update_request_status', {
     p_request_id: requestId,
     p_new_status: status,
   });
@@ -437,32 +440,32 @@ export async function getMyRequests(options?: {
   as?: 'sponsor' | 'talent';
   status?: RequestStatus;
 }) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getAuth().getCurrentUser();
   if (!user) return { data: [], error: new Error('Not authenticated') };
 
-  let query = supabase
+  let query = getDb()
     .from('v_recommendation_requests_detail')
     .select('*');
 
   if (options?.as === 'sponsor') {
     // Filter by sponsor (via sponsor_id joined through profile)
-    const { data: sponsor } = await supabase
+    const { data: sponsor } = await getDb()
       .from('sponsor_profiles')
       .select('id')
       .eq('user_id', user.id)
       .single();
     if (sponsor) {
-      query = query.eq('sponsor_id', sponsor.id);
+      query = query.eq('sponsor_id', (sponsor as { id: string }).id);
     }
   } else if (options?.as === 'talent') {
     // Filter by talent
-    const { data: talent } = await supabase
+    const { data: talent } = await getDb()
       .from('talent_profiles')
       .select('id')
       .eq('user_id', user.id)
       .single();
     if (talent) {
-      query = query.eq('talent_id', talent.id);
+      query = query.eq('talent_id', (talent as { id: string }).id);
     }
   }
 
@@ -479,7 +482,7 @@ export async function recordOutcome(
   outcome: OutcomeType,
   notes?: string
 ) {
-  const { data, error } = await supabase.rpc('record_outcome', {
+  const { data, error } = await getDb().rpc('record_outcome', {
     p_request_id: requestId,
     p_outcome: outcome,
     p_notes: notes,
@@ -500,7 +503,7 @@ export async function submitContactForm(input: {
   message: string;
 }) {
   // Use direct insert instead of RPC
-  const { data, error } = await supabase
+  const { data, error } = await getDb()
     .from('contact_submissions')
     .insert({
       full_name: input.full_name,
@@ -521,7 +524,7 @@ export async function getContactSubmissions(options?: {
   limit?: number;
   offset?: number;
 }) {
-  let query = supabase
+  let query = getDb()
     .from('contact_submissions')
     .select('*', { count: 'exact' });
 
@@ -543,7 +546,7 @@ export async function updateContactSubmissionStatus(
   submissionId: string,
   status: 'new' | 'read' | 'replied' | 'archived'
 ) {
-  const { data, error } = await supabase
+  const { data, error } = await getDb()
     .from('contact_submissions')
     .update({ status, updated_at: new Date().toISOString() })
     .eq('id', submissionId);
@@ -568,7 +571,7 @@ export async function submitSponsorProfileAnon(input: {
   wants_talent_pool_access?: boolean;
   wants_onboarding_call?: boolean;
 }) {
-  const { data, error } = await supabase.rpc('submit_sponsor_profile_anon', {
+  const { data, error } = await getDb().rpc('submit_sponsor_profile_anon', {
     p_full_name: input.full_name,
     p_email: input.email,
     p_title: input.title,
@@ -595,17 +598,17 @@ export async function signUpWithProfile(
   fullName: string,
   role: 'talent' | 'sponsor'
 ) {
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  const { data: authData, error: authError } = await getAuth().signUp({
     email,
     password,
   });
 
-  if (authError || !authData.user) {
+  if (authError || !authData?.user) {
     return { data: null, error: authError };
   }
 
   // Create profile
-  const { error: profileError } = await supabase
+  const { error: profileError } = await getDb()
     .from('profiles')
     .insert({
       id: authData.user.id,

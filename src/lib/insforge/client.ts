@@ -1,9 +1,10 @@
 // ============================================================================
 // INSFORGE CLIENT - Database client singleton
+// Provides Supabase-compatible API using InsForge SDK
 // ============================================================================
 
 import { createClient } from '@insforge/sdk';
-import type { InsForgeClient, Database } from '@insforge/sdk';
+import type { InsForgeClient, Database, Auth, Storage } from '@insforge/sdk';
 
 let clientInstance: InsForgeClient | null = null;
 let initError: Error | null = null;
@@ -16,8 +17,8 @@ export function getInsforgeClient(): InsForgeClient {
   if (clientInstance) return clientInstance;
   if (initError) throw initError;
 
-  const baseUrl = import.meta.env['VITE_SUPABASE_URL'];
-  const anonKey = import.meta.env['VITE_SUPABASE_ANON_KEY'];
+  const baseUrl = import.meta.env['VITE_INSFORGE_URL'] || import.meta.env['VITE_SUPABASE_URL'];
+  const anonKey = import.meta.env['VITE_INSFORGE_ANON_KEY'] || import.meta.env['VITE_SUPABASE_ANON_KEY'];
 
   console.log('[InsForge] Initializing client...', { 
     baseUrl: baseUrl ? 'set' : 'missing', 
@@ -46,27 +47,8 @@ export function getInsforgeClient(): InsForgeClient {
 }
 
 /**
- * Get database instance lazily
+ * Database helper - direct access to database
  */
-export function getDb(): Database {
-  const client = getInsforgeClient();
-  return client.database;
-}
-
-// Lazy export for insforge
-export const insforge = {
-  get database() {
-    return getInsforgeClient().database;
-  },
-  get storage() {
-    return getInsforgeClient().storage;
-  },
-  get auth() {
-    return getInsforgeClient().auth;
-  },
-};
-
-// Lazy export for db
 export const db = {
   from(table: string) {
     return getDb().from(table);
@@ -76,8 +58,76 @@ export const db = {
   },
 };
 
+/**
+ * Get database instance lazily
+ */
+export function getDb(): Database {
+  const client = getInsforgeClient();
+  return client.database;
+}
+
+/**
+ * Get auth instance lazily
+ */
+export function getAuth(): Auth {
+  const client = getInsforgeClient();
+  return client.auth;
+}
+
+/**
+ * Get storage instance lazily
+ */
+export function getStorage(): Storage {
+  const client = getInsforgeClient();
+  return client.storage;
+}
+
+/**
+ * Supabase-compatible client API
+ * This provides a backward-compatible interface that matches Supabase client
+ */
+export const insforge = {
+  // Database operations - direct access to database
+  get database() {
+    return getInsforgeClient().database;
+  },
+  
+  // Storage operations
+  get storage() {
+    return getInsforgeClient().storage;
+  },
+  
+  // Auth operations
+  get auth() {
+    return getInsforgeClient().auth;
+  },
+  
+  // Direct from() method for backward compatibility
+  from(table: string) {
+    return getDb().from(table);
+  },
+  
+  // Direct rpc() method for backward compatibility
+  rpc(fn: string, args?: Record<string, unknown>) {
+    return getDb().rpc(fn, args);
+  },
+  
+  // Realtime channel (if supported by InsForge)
+  channel(_name: string) {
+    const client = getInsforgeClient();
+    if ('realtime' in client && client.realtime && typeof (client.realtime as unknown as { channel?: (name: string) => unknown }).channel === 'function') {
+      return (client.realtime as unknown as { channel: (name: string) => unknown }).channel(_name);
+    }
+    // Return a mock channel if realtime is not available
+    return {
+      on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+      subscribe: () => ({ unsubscribe: () => {} }),
+    };
+  },
+};
+
 // Re-export types
-export type { InsForgeClient, Database };
+export type { InsForgeClient, Database, Auth, Storage };
 
 // ============================================================================
 // STORAGE HELPERS
@@ -218,6 +268,6 @@ export async function downloadFile(
  * @returns Public URL string
  */
 export function getPublicUrl(bucket: string, path: string): string {
-  const baseUrl = import.meta.env['VITE_SUPABASE_URL'];
+  const baseUrl = import.meta.env['VITE_INSFORGE_URL'] || import.meta.env['VITE_SUPABASE_URL'];
   return `${baseUrl}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(path)}`;
 }

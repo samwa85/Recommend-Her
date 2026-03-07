@@ -3,7 +3,7 @@
 // Monitor database connectivity and system status
 // ============================================================================
 
-import { supabase } from './supabase';
+import { getAuth, getDb, getStorage } from './insforge/client';
 
 export interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -24,7 +24,7 @@ export async function runHealthCheck(): Promise<HealthCheckResult> {
   // Check 1: Database connectivity
   try {
     const dbStart = Date.now();
-    const { error } = await supabase
+    const { error } = await getDb()
       .from('profiles')
       .select('count', { count: 'exact', head: true });
     
@@ -45,7 +45,10 @@ export async function runHealthCheck(): Promise<HealthCheckResult> {
   // Check 2: Storage connectivity
   try {
     const storageStart = Date.now();
-    const { error } = await supabase.storage.getBucket('talent-cvs');
+    // InsForge doesn't have getBucket method, check bucket by trying to list files
+    const { error } = await getStorage()
+      .from('talent-cvs')
+      .list({ limit: 1 });
     
     checks.push({
       name: 'Storage Connection',
@@ -64,7 +67,7 @@ export async function runHealthCheck(): Promise<HealthCheckResult> {
   // Check 3: Auth service
   try {
     const authStart = Date.now();
-    await supabase.auth.getSession();
+    await getAuth().getCurrentSession();
     
     checks.push({
       name: 'Auth Service',
@@ -83,7 +86,7 @@ export async function runHealthCheck(): Promise<HealthCheckResult> {
   // Check 4: RPC functions
   try {
     const rpcStart = Date.now();
-    const { error } = await supabase.rpc('get_talent_status_counts');
+    const { error } = await getDb().rpc('get_talent_status_counts');
     
     checks.push({
       name: 'RPC Functions',
@@ -131,7 +134,7 @@ export const maintenanceTasks = {
    * Clean up old rate limit records
    */
   async cleanupRateLimits(): Promise<void> {
-    await supabase.rpc('cleanup_rate_limits');
+    await getDb().rpc('cleanup_rate_limits');
   },
 
   /**
@@ -150,8 +153,8 @@ export const maintenanceTasks = {
    * Clean up expired sessions/tokens
    */
   async cleanupExpiredSessions(): Promise<void> {
-    // Supabase handles this automatically, but you can add custom cleanup
-    console.log('[Maintenance] Session cleanup not needed (handled by Supabase)');
+    // InsForge handles this automatically, but you can add custom cleanup
+    console.log('[Maintenance] Session cleanup not needed (handled by InsForge)');
   },
 
   /**
@@ -159,7 +162,7 @@ export const maintenanceTasks = {
    */
   async refreshStatistics(): Promise<void> {
     // Refresh any cached counts or materialized views
-    const { error } = await supabase.rpc('get_talent_status_counts');
+    const { error } = await getDb().rpc('get_talent_status_counts');
     if (error) throw error;
   },
 
@@ -168,7 +171,7 @@ export const maintenanceTasks = {
    */
   async checkOrphanedFiles(): Promise<void> {
     // Get all CV file paths from database
-    const { data: talentProfiles } = await supabase
+    const { data: talentProfiles } = await getDb()
       .from('talent_profiles')
       .select('cv_file_path')
       .not('cv_file_path', 'is', null);
@@ -193,11 +196,11 @@ export async function runDataIntegrityChecks(): Promise<{
 
   // Check 1: Talent profiles without matching profiles
   try {
-    const { data } = await supabase
+    const { data } = await getDb()
       .from('talent_profiles')
       .select('id, user_id')
       .not('user_id', 'in', (
-        supabase.from('profiles').select('id')
+        getDb().from('profiles').select('id')
       ));
     
     if (data && data.length > 0) {
@@ -212,7 +215,7 @@ export async function runDataIntegrityChecks(): Promise<{
 
   // Check 3: Duplicate emails
   try {
-    const { data } = await supabase.rpc('check_duplicate_emails');
+    const { data } = await getDb().rpc('check_duplicate_emails');
     if (data && data.length > 0) {
       issues.push(`Found ${data.length} duplicate email addresses`);
     }

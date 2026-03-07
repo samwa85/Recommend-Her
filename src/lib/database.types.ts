@@ -23,7 +23,7 @@ export type FileOwnerType = 'talent' | 'sponsor' | 'request' | 'message';
 // ============================================================================
 
 /**
- * Files table - Stores metadata for files uploaded to Supabase Storage
+ * Files table - Stores metadata for files uploaded to InsForge Storage
  * Used for CVs, attachments, etc.
  */
 export interface File {

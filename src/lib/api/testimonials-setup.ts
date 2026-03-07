@@ -2,7 +2,7 @@
 // TESTIMONIALS SETUP - Diagnostic and setup helper
 // ============================================================================
 
-import { supabase } from '../supabase';
+import { getDb, getStorage } from '@/lib/insforge/client';
 
 /**
  * Check if testimonials table and functions exist
@@ -20,7 +20,7 @@ export async function checkTestimonialsSetup(): Promise<{
 
   // Check table
   try {
-    const { error } = await supabase
+    const { error } = await getDb()
       .from('testimonials')
       .select('id', { count: 'exact', head: true });
     
@@ -32,7 +32,7 @@ export async function checkTestimonialsSetup(): Promise<{
 
   // Check RPC function
   try {
-    const { error } = await supabase.rpc('upsert_testimonial', {
+    const { error } = await getDb().rpc('upsert_testimonial', {
       p_id: null,
       p_name: 'test',
       p_title: 'test',
@@ -44,10 +44,12 @@ export async function checkTestimonialsSetup(): Promise<{
     rpcExists = !e.message?.includes('function') && e.code !== '42883';
   }
 
-  // Check storage bucket
+  // Check storage bucket - InsForge doesn't have listBuckets, try listing files
   try {
-    const { data: buckets, error } = await supabase.storage.listBuckets();
-    bucketExists = buckets?.some(b => b.name === 'testimonial-images') || false;
+    const { error } = await getStorage()
+      .from('testimonial-images')
+      .list({ limit: 1 });
+    bucketExists = !error;
     if (error) errors.push(`Bucket check: ${error.message}`);
   } catch (e: any) {
     errors.push(`Bucket check: ${e.message}`);
@@ -62,7 +64,7 @@ export async function checkTestimonialsSetup(): Promise<{
 export async function createTestimonialsTable(): Promise<boolean> {
   try {
     // Try to create the table with a simple insert
-    const { error } = await supabase.from('testimonials').insert({
+    const { error } = await getDb().from('testimonials').insert({
       name: 'Test',
       title: 'Test',
       quote: 'Test',
@@ -75,7 +77,7 @@ export async function createTestimonialsTable(): Promise<boolean> {
     }
 
     // Clean up test record
-    await supabase.from('testimonials').delete().eq('name', 'Test');
+    await getDb().from('testimonials').delete().eq('name', 'Test');
     return true;
   } catch (e) {
     return false;

@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth/hooks';
 import { getInsforgeClient } from '@/lib/insforge/client';
 
-type LoginStep = 'login' | 'verify' | 'create';
+type LoginStep = 'login' | 'verify';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -174,60 +174,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleCreateAdmin = async () => {
-    setError(null);
-    setSuccess(null);
-    setIsLoading(true);
-    
-    try {
-      const client = getInsforgeClient();
-      console.log('[Login] Creating admin user...');
-      
-      const { data, error } = await client.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-      });
 
-      console.log('[Login] Sign up result:', { data, error });
-
-      if (error) {
-        if (error.message?.includes('already') || error.message?.includes('exists')) {
-          setError('Admin user already exists. Try signing in.');
-        } else {
-          setError('Failed to create admin: ' + error.message);
-        }
-        return;
-      }
-
-      // Check if email verification is required
-      if (data?.requireEmailVerification) {
-        setStep('verify');
-        setSuccess('Admin created! Check your email for verification code.');
-        
-        // Set profile
-        try {
-          await client.auth.setProfile({
-            nickname: 'Super Admin',
-            bio: 'Recommend Her Administrator',
-          });
-        } catch {
-          // Ignore profile errors
-        }
-        return;
-      }
-
-      // If no verification needed, try signing in
-      if (data?.accessToken) {
-        toast.success('Admin created and logged in!');
-        navigate('/admin', { replace: true });
-      }
-    } catch (err) {
-      console.error('[Login] Create admin error:', err);
-      setError('Failed to create admin. Check console.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Show loading state while checking auth
   if (authLoading) {
@@ -258,12 +205,10 @@ export default function LoginPage() {
             <CardTitle>
               {step === 'login' && 'Sign In'}
               {step === 'verify' && 'Verify Email'}
-              {step === 'create' && 'Create Admin'}
             </CardTitle>
             <CardDescription>
               {step === 'login' && 'Enter your credentials to access the admin dashboard'}
               {step === 'verify' && 'Enter the 6-digit code sent to your email'}
-              {step === 'create' && 'Create the initial admin account'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -348,18 +293,6 @@ export default function LoginPage() {
                     <><>Sign In</><ArrowRight className="w-4 h-4 ml-2" /></>
                   )}
                 </Button>
-
-                <div className="flex gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    className="flex-1" 
-                    disabled={isLoading}
-                    onClick={handleCreateAdmin}
-                  >
-                    Create Admin
-                  </Button>
-                </div>
               </form>
             )}
 

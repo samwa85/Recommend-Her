@@ -71,8 +71,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AdminLayout } from '../components/AdminLayout';
 import { SkeletonTable } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { useMessageList, useMessageDetail } from '../hooks/useAdminData';
-import { createMessage } from '@/lib/queries';
+import { createMessage, updateMessageStatus, deleteMessage, bulkUpdateMessageStatus, bulkDeleteMessages } from '@/lib/queries';
 import { formatDate, formatRelativeTime } from '@/lib/format/date';
 import { MessageStatus, MESSAGE_STATUS_LABELS } from '@/lib/types/enums';
 import type { Message } from '@/lib/types/db';
@@ -130,6 +132,14 @@ export default function MessagesPage() {
   // Action dialogs
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
+  
+  // Selection state
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  
+  // Bulk action dialog
+  const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
+  const [bulkAction, setBulkAction] = useState<'markRead' | 'archive' | 'delete'>('markRead');
   const [newMessageForm, setNewMessageForm] = useState({
     sender_name: '',
     sender_email: '',
@@ -183,6 +193,8 @@ export default function MessagesPage() {
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
   
   const unreadCount = data.data.filter(m => m.status === MessageStatus.UNREAD).length;
+  
+  const hasSelectedRows = selectedRows.size > 0;
 
   // ============================================================================
   // HANDLERS
@@ -217,6 +229,59 @@ export default function MessagesPage() {
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
     }));
   }, []);
+
+  const handleRowSelect = useCallback((id: string) => {
+    setSelectedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectAll) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(data.data.map(m => m.id)));
+    }
+    setSelectAll(!selectAll);
+  }, [selectAll, data.data]);
+
+  const handleBulkAction = useCallback(async () => {
+    const ids = Array.from(selectedRows);
+    
+    toast.promise(
+      async () => {
+        if (bulkAction === 'delete') {
+          // Use bulk delete
+          const result = await bulkDeleteMessages(ids);
+          if (result.error) throw result.error;
+          if (result.count === 0) throw new Error('No messages were deleted');
+        } else {
+          // Use bulk update for status changes
+          const status = bulkAction === 'markRead' ? MessageStatus.READ : MessageStatus.ARCHIVED;
+          const result = await bulkUpdateMessageStatus(ids, status);
+          if (result.error) throw result.error;
+          if (result.count === 0) throw new Error('No messages were updated');
+        }
+
+        setSelectedRows(new Set());
+        setSelectAll(false);
+        setBulkActionDialogOpen(false);
+        refresh();
+        return `${ids.length} messages ${bulkAction === 'delete' ? 'deleted' : 'updated'}`;
+      },
+      {
+        loading: 'Processing...',
+        success: 'Bulk action completed',
+        error: (err) => `Bulk action failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      }
+    );
+  }, [selectedRows, bulkAction, refresh]);
 
   const handleViewDetail = useCallback(async (message: Message) => {
     setSelectedMessageId(message.id);
@@ -413,6 +478,40 @@ export default function MessagesPage() {
             )}
           </Button>
 
+          {hasSelectedRows && (
+            <>
+              <Separator orientation="vertical" className="h-6" />
+              <span className="text-sm text-muted-foreground">
+                {selectedRows.size} selected
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setBulkAction('markRead'); setBulkActionDialogOpen(true); }}
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Mark Read
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setBulkAction('archive'); setBulkActionDialogOpen(true); }}
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                Archive
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-600"
+                onClick={() => { setBulkAction('delete'); setBulkActionDialogOpen(true); }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            </>
+          )}
+
           <div className="flex-1" />
           
           <Select
@@ -516,6 +615,12 @@ export default function MessagesPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={selectAll}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead 
                     className="cursor-pointer"
                     onClick={() => handleSort('sender_name')}
@@ -561,10 +666,17 @@ export default function MessagesPage() {
                     key={message.id}
                     className={cn(
                       'group cursor-pointer',
-                      message.status === MessageStatus.UNREAD && 'bg-blue-50/50'
+                      message.status === MessageStatus.UNREAD && 'bg-blue-50/50',
+                      selectedRows.has(message.id) && 'bg-muted'
                     )}
                     onClick={() => handleViewDetail(message)}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedRows.has(message.id)}
+                        onCheckedChange={() => handleRowSelect(message.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className={`
@@ -952,6 +1064,30 @@ export default function MessagesPage() {
               Cancel
             </Button>
             <Button onClick={handleCreateMessage}>Create Message</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Action Dialog */}
+      <Dialog open={bulkActionDialogOpen} onOpenChange={setBulkActionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Bulk Action</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to {bulkAction === 'markRead' ? 'mark as read' : bulkAction} {selectedRows.size} message{selectedRows.size !== 1 ? 's' : ''}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkActionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant={bulkAction === 'delete' ? 'destructive' : 'default'}
+              onClick={handleBulkAction}
+            >
+              {bulkAction === 'delete' ? <Trash2 className="w-4 h-4 mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+              Confirm
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

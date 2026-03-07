@@ -17,8 +17,13 @@ import {
   Archive,
   FileText,
   RefreshCw,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -87,6 +92,23 @@ export default function BlogPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
+  // Sort state
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  }>({
+    key: 'created_at',
+    direction: 'desc',
+  });
+
+  // Selection state
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+
+  // Bulk action dialog
+  const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
+  const [bulkAction, setBulkAction] = useState<'publish' | 'unpublish' | 'archive' | 'delete'>('publish');
+
   const perPage = 10;
 
   // ============================================================================
@@ -105,6 +127,10 @@ export default function BlogPage() {
           ...(search && { search }),
         },
         pagination: { page, perPage },
+        sort: { 
+          by: sortConfig.key as 'title' | 'author_name' | 'status' | 'created_at',
+          order: sortConfig.direction 
+        },
       };
 
       const result = await listBlogPosts(options);
@@ -124,7 +150,7 @@ export default function BlogPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter, categoryFilter, search, page]);
+  }, [sortConfig, statusFilter, categoryFilter, search, page]);
 
   // Fetch on mount and when filters change
   useMemo(() => {
@@ -220,6 +246,73 @@ export default function BlogPage() {
     window.open(`/blog/${post.slug}`, '_blank');
   };
 
+  const handleSort = useCallback((key: string) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  }, []);
+
+  const handleRowSelect = useCallback((id: string) => {
+    setSelectedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectAll) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(posts.map(p => p.id)));
+    }
+    setSelectAll(!selectAll);
+  }, [selectAll, posts]);
+
+  const handleBulkAction = useCallback(async () => {
+    const ids = Array.from(selectedRows);
+    
+    toast.promise(
+      async () => {
+        const results = await Promise.allSettled(
+          ids.map((id) => {
+            if (bulkAction === 'delete') return deleteBlogPost(id);
+            if (bulkAction === 'publish') return publishBlogPost(id);
+            if (bulkAction === 'unpublish') return unpublishBlogPost(id);
+            return archiveBlogPost(id);
+          })
+        );
+
+        const successCount = results.filter((result) => {
+          if (result.status === 'rejected') return false;
+          const value = result.value as { success?: boolean; error?: Error | null };
+          if ('success' in value) return value.success === true;
+          return value.error == null;
+        }).length;
+
+        if (successCount === 0) {
+          throw new Error('No posts were updated');
+        }
+
+        setSelectedRows(new Set());
+        setSelectAll(false);
+        setBulkActionDialogOpen(false);
+        fetchPosts();
+        return `${successCount} posts updated`;
+      },
+      {
+        loading: 'Processing...',
+        success: 'Bulk action completed',
+        error: 'Bulk action failed',
+      }
+    );
+  }, [selectedRows, bulkAction, fetchPosts]);
+
   // ============================================================================
   // RENDER HELPERS
   // ============================================================================
@@ -237,7 +330,19 @@ export default function BlogPage() {
     }
   };
 
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key) {
+      return <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/50" />;
+    }
+    return sortConfig.direction === 'asc' ? (
+      <ArrowUp className="w-3.5 h-3.5 text-primary" />
+    ) : (
+      <ArrowDown className="w-3.5 h-3.5 text-primary" />
+    );
+  };
+
   const totalPages = Math.ceil(totalCount / perPage);
+  const hasSelectedRows = selectedRows.size > 0;
 
   // ============================================================================
   // RENDER
@@ -319,6 +424,48 @@ export default function BlogPage() {
               <SelectItem value="News">News</SelectItem>
             </SelectContent>
           </Select>
+
+          {hasSelectedRows && (
+            <>
+              <Separator orientation="vertical" className="h-6" />
+              <span className="text-sm text-muted-foreground">
+                {selectedRows.size} selected
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setBulkAction('publish'); setBulkActionDialogOpen(true); }}
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Publish
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setBulkAction('unpublish'); setBulkActionDialogOpen(true); }}
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                Unpublish
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setBulkAction('archive'); setBulkActionDialogOpen(true); }}
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                Archive
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-600"
+                onClick={() => { setBulkAction('delete'); setBulkActionDialogOpen(true); }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -367,11 +514,57 @@ export default function BlogPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead>Post</TableHead>
-                  <TableHead>Author</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={selectAll}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer"
+                    onClick={() => handleSort('title')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Post
+                      {getSortIcon('title')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer"
+                    onClick={() => handleSort('author_name')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Author
+                      {getSortIcon('author_name')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer"
+                    onClick={() => handleSort('category')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Category
+                      {getSortIcon('category')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Status
+                      {getSortIcon('status')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer"
+                    onClick={() => handleSort('created_at')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Date
+                      {getSortIcon('created_at')}
+                    </div>
+                  </TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -379,9 +572,15 @@ export default function BlogPage() {
                 {posts.map((post) => (
                   <TableRow
                     key={post.id}
-                    className="group cursor-pointer"
+                    className={`group cursor-pointer ${selectedRows.has(post.id) ? 'bg-muted' : ''}`}
                     onClick={() => handleEdit(post)}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedRows.has(post.id)}
+                        onCheckedChange={() => handleRowSelect(post.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-start gap-3">
                         {post.featured_image ? (
@@ -546,6 +745,30 @@ export default function BlogPage() {
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Action Dialog */}
+      <Dialog open={bulkActionDialogOpen} onOpenChange={setBulkActionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Bulk Action</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to {bulkAction} {selectedRows.size} post{selectedRows.size !== 1 ? 's' : ''}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkActionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant={bulkAction === 'delete' ? 'destructive' : 'default'}
+              onClick={handleBulkAction}
+            >
+              {bulkAction === 'delete' ? <Trash2 className="w-4 h-4 mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+              Confirm
             </Button>
           </DialogFooter>
         </DialogContent>

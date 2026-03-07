@@ -23,11 +23,14 @@ import {
   X,
   Clock,
   UserCheck,
+  Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import {
   Select,
@@ -72,7 +75,7 @@ import { AdminLayout } from '../components/AdminLayout';
 import { SkeletonTable } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
 import { useRequestList, useRequestDetail } from '../hooks/useAdminData';
-import { createRequest, updateRequest } from '@/lib/queries';
+import { createRequest, updateRequest, updateRequestStatus, deleteRequest } from '@/lib/queries';
 import { formatDate, formatRelativeTime } from '@/lib/format/date';
 import { RequestStatus, RequestPriority, REQUEST_STATUS_LABELS, REQUEST_PRIORITY_LABELS } from '@/lib/types/enums';
 import type { Request } from '@/lib/types/db';
@@ -165,6 +168,14 @@ export default function RequestsPage() {
   // Action dialogs
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [newRequestDialogOpen, setNewRequestDialogOpen] = useState(false);
+  
+  // Selection state
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  
+  // Bulk action dialog
+  const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
+  const [bulkAction, setBulkAction] = useState<'resolve' | 'close' | 'archive' | 'delete'>('resolve');
   const [adminNotes, setAdminNotes] = useState('');
   const [newRequestForm, setNewRequestForm] = useState<{
     request_type: string;
@@ -220,6 +231,7 @@ export default function RequestsPage() {
   // ============================================================================
   
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const hasSelectedRows = selectedRows.size > 0;
   
   // ============================================================================
   // HANDLERS
@@ -256,6 +268,66 @@ export default function RequestsPage() {
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
     }));
   }, []);
+
+  const handleRowSelect = useCallback((id: string) => {
+    setSelectedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectAll) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(data.data.map(r => r.id)));
+    }
+    setSelectAll(!selectAll);
+  }, [selectAll, data.data]);
+
+  const handleBulkAction = useCallback(async () => {
+    const ids = Array.from(selectedRows);
+    
+    toast.promise(
+      async () => {
+        const results = await Promise.allSettled(
+          ids.map((id) => {
+            if (bulkAction === 'delete') return deleteRequest(id);
+            if (bulkAction === 'resolve') return updateRequestStatus(id, RequestStatus.CLOSED);
+            if (bulkAction === 'close') return updateRequestStatus(id, RequestStatus.CLOSED);
+            return updateRequestStatus(id, RequestStatus.CLOSED);
+          })
+        );
+
+        const successCount = results.filter((result) => {
+          if (result.status === 'rejected') return false;
+          const value = result.value as { success?: boolean; error?: Error | null };
+          if ('success' in value) return value.success === true;
+          return value.error == null;
+        }).length;
+
+        if (successCount === 0) {
+          throw new Error('No requests were updated');
+        }
+
+        setSelectedRows(new Set());
+        setSelectAll(false);
+        setBulkActionDialogOpen(false);
+        refresh();
+        return `${successCount} requests updated`;
+      },
+      {
+        loading: 'Processing...',
+        success: 'Bulk action completed',
+        error: 'Bulk action failed',
+      }
+    );
+  }, [selectedRows, bulkAction, refresh]);
 
   const handleViewDetail = useCallback((request: Request) => {
     setSelectedRequestId(request.id);
@@ -442,6 +514,40 @@ export default function RequestsPage() {
             )}
           </Button>
 
+          {hasSelectedRows && (
+            <>
+              <Separator orientation="vertical" className="h-6" />
+              <span className="text-sm text-muted-foreground">
+                {selectedRows.size} selected
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setBulkAction('resolve'); setBulkActionDialogOpen(true); }}
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Resolve
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setBulkAction('archive'); setBulkActionDialogOpen(true); }}
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                Archive
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-600"
+                onClick={() => { setBulkAction('delete'); setBulkActionDialogOpen(true); }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            </>
+          )}
+
           <div className="flex-1" />
           
           <Select
@@ -571,6 +677,12 @@ export default function RequestsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={selectAll}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead 
                     className="cursor-pointer"
                     onClick={() => handleSort('request_type')}
@@ -634,9 +746,18 @@ export default function RequestsPage() {
                   return (
                     <TableRow
                       key={request.id}
-                      className="group cursor-pointer"
+                      className={cn(
+                        'group cursor-pointer',
+                        selectedRows.has(request.id) && 'bg-muted'
+                      )}
                       onClick={() => handleViewDetail(request)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedRows.has(request.id)}
+                          onCheckedChange={() => handleRowSelect(request.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize">
                           {request.request_type.replace('_', ' ')}
@@ -1022,6 +1143,30 @@ export default function RequestsPage() {
             </Button>
             <Button onClick={handleCreateRequest}>
               Create Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Action Dialog */}
+      <Dialog open={bulkActionDialogOpen} onOpenChange={setBulkActionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Bulk Action</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to {bulkAction} {selectedRows.size} request{selectedRows.size !== 1 ? 's' : ''}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkActionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant={bulkAction === 'delete' ? 'destructive' : 'default'}
+              onClick={handleBulkAction}
+            >
+              {bulkAction === 'delete' ? <Trash2 className="w-4 h-4 mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+              Confirm
             </Button>
           </DialogFooter>
         </DialogContent>

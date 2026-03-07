@@ -120,13 +120,7 @@ const CTASection = () => {
         <div ref={ctaRef} className="flex flex-wrap justify-center gap-4">
           <Link
             to="/for-talent"
-            className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-bold text-lg transition-all duration-300 hover:-translate-y-1 hover:scale-105"
-            style={{ 
-              backgroundColor: '#ffffff', 
-              color: '#1e1b4b',
-              boxShadow: '0 8px 30px rgba(255, 255, 255, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2)',
-              border: '2px solid #ffffff'
-            }}
+            className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-bold text-lg text-white transition-all duration-300 hover:-translate-y-1 hover:scale-105 border-2 border-white bg-transparent hover:bg-white/10"
           >
             Submit Your CV
             <ArrowRight
@@ -137,13 +131,7 @@ const CTASection = () => {
           </Link>
           <Link
             to="/for-sponsors"
-            className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-bold text-lg transition-all duration-300 border-2 hover:-translate-y-1 hover:scale-105"
-            style={{ 
-              backgroundColor: 'transparent',
-              borderColor: '#ffffff', 
-              color: '#ffffff',
-              boxShadow: '0 4px 15px rgba(255, 255, 255, 0.15)'
-            }}
+            className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-bold text-lg text-white transition-all duration-300 border-2 border-white bg-white/10 hover:bg-white/20 hover:-translate-y-1 hover:scale-105"
           >
             Become a Sponsor
             <ArrowRight

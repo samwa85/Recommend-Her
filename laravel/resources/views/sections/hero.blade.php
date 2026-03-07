@@ -63,8 +63,7 @@
             <div class="flex flex-wrap gap-4 reveal" style="transition-delay: 300ms;">
                 <a
                     href="{{ url('/for-talent') }}"
-                    class="group inline-flex items-center gap-2 px-8 py-4 rounded-xl font-sans font-semibold text-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                    style="background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); box-shadow: 0 4px 14px oklch(0.55 0.20 20 / 0.4);"
+                    class="group inline-flex items-center gap-2 px-8 py-4 rounded-xl font-sans font-semibold text-lg text-white transition-all duration-300 border-2 border-white bg-transparent hover:bg-white/10 hover:-translate-y-1 hover:shadow-xl"
                 >
                     Submit Your CV
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:translate-x-1">
@@ -74,7 +73,7 @@
                 </a>
                 <a
                     href="{{ url('/for-sponsors') }}"
-                    class="group inline-flex items-center gap-2 px-8 py-4 rounded-xl font-sans font-semibold text-lg transition-all duration-300 border-2 border-white/40 text-white hover:bg-white/15 hover:border-white/60 backdrop-blur-sm"
+                    class="group inline-flex items-center gap-2 px-8 py-4 rounded-xl font-sans font-semibold text-lg text-white transition-all duration-300 border-2 border-white bg-white/10 hover:bg-white/20 hover:-translate-y-1 backdrop-blur-sm"
                 >
                     Become a Sponsor
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:translate-x-1">

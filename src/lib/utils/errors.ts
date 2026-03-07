@@ -3,7 +3,13 @@
 // Shared error handling functions for queries
 // ============================================================================
 
-import { type PostgrestError } from '@supabase/supabase-js';
+// Define PostgrestError interface locally to avoid Supabase dependency
+interface PostgrestError {
+  message: string;
+  details: string;
+  hint: string;
+  code: string;
+}
 
 /**
  * Standard result type for single record queries

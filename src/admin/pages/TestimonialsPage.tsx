@@ -8,7 +8,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  GripVertical,
   Eye,
   EyeOff,
   Star,
@@ -18,6 +17,8 @@ import {
   Loader2,
   ImageIcon,
   Database,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,6 +85,7 @@ export default function TestimonialsPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [imageRemoved, setImageRemoved] = useState(false);
 
   // Fetch testimonials
   const fetchTestimonials = useCallback(async () => {
@@ -129,6 +131,7 @@ export default function TestimonialsPage() {
     });
     setUploadedImage(null);
     setImagePreview(null);
+    setImageRemoved(false);
     setIsEditDialogOpen(true);
   };
 
@@ -145,6 +148,7 @@ export default function TestimonialsPage() {
     });
     setUploadedImage(null);
     setImagePreview(testimonial.image_url);
+    setImageRemoved(false);
     setIsEditDialogOpen(true);
   };
 
@@ -183,9 +187,34 @@ export default function TestimonialsPage() {
       let imagePath = selectedTestimonial?.image_path;
       let imageUrl = selectedTestimonial?.image_url;
 
+      // Handle image removal
+      if (imageRemoved && selectedTestimonial?.image_path) {
+        try {
+          await deleteTestimonialImage(selectedTestimonial.image_path);
+          console.log('🗑️ [Form] Deleted removed image:', selectedTestimonial.image_path);
+        } catch (err) {
+          console.warn('⚠️ [Form] Failed to delete removed image:', err);
+        }
+        imagePath = undefined;
+        imageUrl = undefined;
+      }
+
       // Upload new image if selected
       if (uploadedImage) {
         console.log('📤 [Form] Uploading image...');
+        
+        // Delete old image if exists (to prevent orphaned files)
+        const oldImagePath = selectedTestimonial?.image_path;
+        if (oldImagePath && !imageRemoved) {
+          try {
+            await deleteTestimonialImage(oldImagePath);
+            console.log('🗑️ [Form] Deleted old image:', oldImagePath);
+          } catch (err) {
+            // Non-critical error - continue with upload
+            console.warn('⚠️ [Form] Failed to delete old image:', err);
+          }
+        }
+        
         const uploadResult = await uploadTestimonialImage(
           uploadedImage,
           selectedTestimonial?.id
@@ -254,6 +283,38 @@ export default function TestimonialsPage() {
     }
   };
 
+  const handleMoveUp = async (index: number) => {
+    if (index === 0) return;
+    
+    const newOrder = [...testimonials];
+    [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+    
+    try {
+      await reorderTestimonials(newOrder.map(t => t.id));
+      toast.success('Order updated');
+      fetchTestimonials();
+    } catch (error) {
+      console.error('Error reordering:', error);
+      toast.error('Failed to update order');
+    }
+  };
+
+  const handleMoveDown = async (index: number) => {
+    if (index === testimonials.length - 1) return;
+    
+    const newOrder = [...testimonials];
+    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+    
+    try {
+      await reorderTestimonials(newOrder.map(t => t.id));
+      toast.success('Order updated');
+      fetchTestimonials();
+    } catch (error) {
+      console.error('Error reordering:', error);
+      toast.error('Failed to update order');
+    }
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -307,6 +368,7 @@ export default function TestimonialsPage() {
   const clearImage = () => {
     setUploadedImage(null);
     setImagePreview(null);
+    setImageRemoved(true);
     setFormData(prev => ({ ...prev, image_path: undefined, image_url: undefined }));
   };
 
@@ -380,10 +442,13 @@ GRANT ALL ON public.testimonials TO authenticated;`}
               key={testimonial.id}
               testimonial={testimonial}
               index={index}
+              totalCount={testimonials.length}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onToggleActive={handleToggleActive}
               onToggleFeatured={handleToggleFeatured}
+              onMoveUp={() => handleMoveUp(index)}
+              onMoveDown={() => handleMoveDown(index)}
             />
           ))}
         </div>
@@ -610,19 +675,25 @@ function StatCard({ label, value, color = 'default' }: StatCardProps) {
 interface TestimonialCardProps {
   testimonial: Testimonial;
   index: number;
+  totalCount: number;
   onEdit: (testimonial: Testimonial) => void;
   onDelete: (testimonial: Testimonial) => void;
   onToggleActive: (testimonial: Testimonial) => void;
   onToggleFeatured: (testimonial: Testimonial) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }
 
 function TestimonialCard({
   testimonial,
   index,
+  totalCount,
   onEdit,
   onDelete,
   onToggleActive,
   onToggleFeatured,
+  onMoveUp,
+  onMoveDown,
 }: TestimonialCardProps) {
   return (
     <div 
@@ -632,9 +703,29 @@ function TestimonialCard({
       `}
     >
       <div className="flex gap-4">
-        {/* Drag Handle */}
-        <div className="flex items-center">
-          <GripVertical className="w-5 h-5 text-gray-400 cursor-move" />
+        {/* Reorder Controls */}
+        <div className="flex flex-col justify-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            disabled={index === 0}
+            onClick={onMoveUp}
+            title="Move up"
+          >
+            <ArrowUp className="w-4 h-4" />
+          </Button>
+          <span className="text-xs text-center text-muted-foreground">{index + 1}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            disabled={index === totalCount - 1}
+            onClick={onMoveDown}
+            title="Move down"
+          >
+            <ArrowDown className="w-4 h-4" />
+          </Button>
         </div>
 
         {/* Image */}

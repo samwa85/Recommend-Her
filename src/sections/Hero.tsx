@@ -178,19 +178,14 @@ const Hero = () => {
           <div ref={ctaRef} className="flex flex-wrap gap-4">
             <Link
               to="/for-talent"
-              className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl font-sans font-semibold text-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-              style={{ 
-                backgroundColor: 'var(--primary)', 
-                color: 'var(--primary-foreground)',
-                boxShadow: '0 4px 14px oklch(0.55 0.20 20 / 0.4)'
-              }}
+              className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl font-sans font-semibold text-lg text-white transition-all duration-300 border-2 border-white bg-transparent hover:bg-white/10 hover:-translate-y-1 hover:shadow-xl"
             >
               Submit Your CV
               <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               to="/for-sponsors"
-              className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl font-sans font-semibold text-lg transition-all duration-300 border-2 border-white/40 text-white hover:bg-white/15 hover:border-white/60 backdrop-blur-sm"
+              className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl font-sans font-semibold text-lg text-white transition-all duration-300 border-2 border-white bg-white/10 hover:bg-white/20 hover:-translate-y-1 backdrop-blur-sm"
             >
               Become a Sponsor
               <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />

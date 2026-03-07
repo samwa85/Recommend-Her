@@ -10,6 +10,7 @@ import { routes } from './routes';
 import { PageLoader } from './components/PageLoader';
 import { Toaster } from './components/ui/sonner';
 import WhatsAppButton from './components/WhatsAppButton';
+import NetworkStatus from './components/NetworkStatus';
 
 // Register GSAP plugins
 try {
@@ -54,6 +55,7 @@ function App() {
     <ErrorBoundary>
       <Router>
         <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--background))' }}>
+          <NetworkStatus />
           <Layout>
             <main>
               <Suspense fallback={<PageLoader />}>

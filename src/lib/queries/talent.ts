@@ -379,7 +379,7 @@ export async function getTalentStatusCounts(): Promise<
 
     // Count by status
     const counts: Record<string, number> = {};
-    data?.forEach((item) => {
+    data?.forEach((item: { status: string }) => {
       counts[item.status] = (counts[item.status] || 0) + 1;
     });
 

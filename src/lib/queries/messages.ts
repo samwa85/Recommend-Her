@@ -300,16 +300,49 @@ export async function bulkUpdateMessageStatus(
   try {
     const mappedStatus = status === MessageStatus.UNREAD ? 'new' : status as ContactSubmissionRow['status'];
     
-    const { data, error } = await db
+    // Perform the update
+    const { error } = await db
       .from('contact_submissions')
       .update({ status: mappedStatus })
-      .in('id', ids)
-      .select('id');
+      .in('id', ids);
 
     if (error) throw error;
 
-    return { count: data?.length || 0, error: null };
+    // Return the number of IDs that were targeted for update
+    return { count: ids.length, error: null };
   } catch (error) {
+    console.error('[Messages] bulkUpdateMessageStatus error:', error);
+    return {
+      count: 0,
+      error: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
+}
+
+export async function bulkDeleteMessages(
+  ids: string[]
+): Promise<{ count: number; error: Error | null }> {
+  try {
+    // First, count how many records exist with these IDs
+    const { count: existingCount, error: countError } = await db
+      .from('contact_submissions')
+      .select('*', { count: 'exact', head: true })
+      .in('id', ids);
+    
+    if (countError) throw countError;
+    
+    // Perform the delete
+    const { error } = await db
+      .from('contact_submissions')
+      .delete()
+      .in('id', ids);
+
+    if (error) throw error;
+
+    // Return the count of records that existed (should be deleted now)
+    return { count: existingCount || ids.length, error: null };
+  } catch (error) {
+    console.error('[Messages] bulkDeleteMessages error:', error);
     return {
       count: 0,
       error: error instanceof Error ? error : new Error(String(error)),
@@ -545,6 +578,7 @@ export default {
   markMessageAsSpam,
   deleteMessage,
   bulkUpdateMessageStatus,
+  bulkDeleteMessages,
   getMessageStatusCounts,
   getUnreadMessagesCount,
   getRecentMessages,

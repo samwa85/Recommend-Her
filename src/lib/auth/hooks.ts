@@ -58,6 +58,13 @@ export function useAuth(): AuthState & AuthActions {
   const checkSession = async () => {
     try {
       const client = getInsforgeClient();
+      // Suppress auto-refresh errors by using getCurrentSession first
+      try {
+        await client.auth.getCurrentSession();
+      } catch {
+        // Ignore refresh errors, proceed to check user
+      }
+      
       const { data, error } = await client.auth.getCurrentUser();
 
       if (error || !data?.user) {

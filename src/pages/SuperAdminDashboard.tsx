@@ -93,7 +93,16 @@ export default function SuperAdminDashboard() {
   }, [autoRefresh]);
 
   // Setup realtime subscriptions
+  // NOTE: Realtime subscriptions are disabled for now as InsForge's realtime API
+  // has a different interface than Supabase. The auto-refresh feature provides
+  // similar functionality by polling every 30 seconds.
   useEffect(() => {
+    // Realtime is disabled - using auto-refresh (30s polling) instead
+    // To enable realtime with InsForge, implement using the realtime.on() and 
+    // realtime.subscribe() methods from the InsForge SDK
+    
+    // Previous Supabase realtime code (commented out):
+    /*
     if (!realtimeEnabled) {
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
       subscriptionsRef.current = [];
@@ -148,6 +157,12 @@ export default function SuperAdminDashboard() {
       { unsubscribe: () => contactSubscription.unsubscribe() },
     ];
 
+    return () => {
+      subscriptionsRef.current.forEach(sub => sub.unsubscribe());
+    };
+    */
+    
+    // Clean up any existing subscriptions
     return () => {
       subscriptionsRef.current.forEach(sub => sub.unsubscribe());
     };
@@ -389,16 +404,16 @@ export default function SuperAdminDashboard() {
               )}
             </div>
             
-            {/* Realtime toggle */}
-            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border">
+            {/* Realtime toggle - disabled for now */}
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border opacity-50">
               <Switch
                 id="realtime"
-                checked={realtimeEnabled}
-                onCheckedChange={setRealtimeEnabled}
+                checked={false}
+                disabled={true}
               />
               <Label htmlFor="realtime" className="text-sm cursor-pointer flex items-center gap-1">
                 <Bell className="w-3 h-3" />
-                Realtime
+                Realtime (disabled)
               </Label>
             </div>
             
@@ -540,6 +555,89 @@ export default function SuperAdminDashboard() {
                       <th className="text-left p-3 font-medium">Name/Email</th>
                       <th className="text-left p-3 font-medium">Headline</th>
                       <th className="text-left p-3 font-medium">Industry</th>
+                      <th className="text-left p-3 font-medium">Status</th>
+                      <th className="text-left p-3 font-medium">Date</th>
+                      <th className="text-left p-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTalent.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-gray-500">
+                          No talent profiles found
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredTalent.map((talent) => (
+                        <tr key={talent.id} className="border-b hover:bg-gray-50">
+                          <td className="p-3">
+                            <div className="font-medium">{talent.profiles?.full_name || 'N/A'}</div>
+                            <div className="text-gray-500 text-xs">{talent.profiles?.email || 'N/A'}</div>
+                          </td>
+                          <td className="p-3 text-sm">{talent.headline || '-'}</td>
+                          <td className="p-3 text-sm">{talent.industry || '-'}</td>
+                          <td className="p-3">
+                            <Badge className={getStatusBadge(talent.status)}>
+                              {talent.status}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-sm text-gray-500">
+                            {new Date(talent.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="p-3">
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => setSelectedTalent(talent)}>
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* Sponsors Tab */}
+          <TabsContent value="sponsors" className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search sponsors..."
+                  value={sponsorSearch}
+                  onChange={(e) => setSponsorSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={sponsorStatusFilter} onValueChange={setSponsorStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={() => exportToCSV(sponsorList, 'sponsors')}>
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            </div>
+
+            <Card>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="text-left p-3 font-medium">Name/Email</th>
+                      <th className="text-left p-3 font-medium">Organization</th>
+                      <th className="text-left p-3 font-medium">Type</th>
                       <th className="text-left p-3 font-medium">Status</th>
                       <th className="text-left p-3 font-medium">Date</th>
                       <th className="text-left p-3 font-medium">Actions</th>

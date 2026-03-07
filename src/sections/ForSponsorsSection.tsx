@@ -173,12 +173,7 @@ const ForSponsorsSection = () => {
 
               <Link
                 to="/for-sponsors"
-                className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-semibold transition-all duration-300 hover:-translate-y-1"
-                style={{ 
-                  backgroundColor: 'var(--primary)', 
-                  color: 'var(--primary-foreground)',
-                  boxShadow: 'var(--shadow)'
-                }}
+                className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg font-sans font-semibold text-white transition-all duration-300 border-2 border-white bg-transparent hover:bg-white/10 hover:-translate-y-1"
               >
                 Join as a Sponsor
                 <ArrowRight

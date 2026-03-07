@@ -29,7 +29,6 @@ const SettingsPage = lazy(() => import('@/admin/pages/SettingsPage'));
 const LoginPage = lazy(() => import('@/admin/pages/LoginPage'));
 const BlogPage = lazy(() => import('@/admin/pages/BlogPage'));
 const TestimonialsPage = lazy(() => import('@/admin/pages/TestimonialsPage'));
-const SetupAdminPage = lazy(() => import('@/admin/pages/SetupAdminPage'));
 
 // Legacy Admin (for backward compatibility)
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
@@ -102,9 +101,6 @@ export const routes: RouteObject[] = [
   
   // Login (Public)
   { path: '/admin/login', element: <LoginPage /> },
-  
-  // Setup (Temporary - remove after creating admin)
-  { path: '/admin/setup', element: <SetupAdminPage /> },
 
   // Legacy Admin (for backward compatibility)
   { path: '/admin-legacy', element: <AdminDashboard /> },

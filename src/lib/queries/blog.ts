@@ -15,6 +15,10 @@ import { handleQueryError, handleSingleQueryError } from '../utils/errors';
 export interface ListBlogOptions {
   filters?: BlogFilters;
   pagination?: PaginationParams;
+  sort?: {
+    by: 'title' | 'author_name' | 'category' | 'status' | 'created_at' | 'published_at';
+    order: 'asc' | 'desc';
+  };
 }
 
 // ============================================================================
@@ -27,7 +31,7 @@ export interface ListBlogOptions {
 export async function listBlogPosts(
   options: ListBlogOptions = {}
 ): Promise<PaginatedResult<BlogPost> & { error: Error | null }> {
-  const { filters = {}, pagination = {} } = options;
+  const { filters = {}, pagination = {}, sort } = options;
   const page = pagination.page ?? 1;
   const perPage = pagination.perPage ?? 10;
   
@@ -58,7 +62,9 @@ export async function listBlogPosts(
     }
     
     // Apply sorting
-    if (filters.status === 'published') {
+    if (sort) {
+      query = query.order(sort.by, { ascending: sort.order === 'asc' });
+    } else if (filters.status === 'published') {
       query = query.order('published_at', { ascending: false });
     } else {
       query = query.order('created_at', { ascending: false });
@@ -366,7 +372,7 @@ export async function getBlogCategories(): Promise<string[]> {
     
     if (error) throw error;
     
-    const categories = [...new Set((data || []).map((post: { category: string }) => post.category))];
+    const categories = [...new Set((data || []).map((post: { category: string }) => post.category))] as string[];
     return categories;
   } catch {
     return ['Leadership', 'Success Stories', 'Diversity & Inclusion', 'Career Growth'];
@@ -384,7 +390,7 @@ export async function getBlogTags(): Promise<string[]> {
     
     if (error) throw error;
     
-    const allTags = (data || []).flatMap((post: { tags: string[] }) => post.tags || []);
+    const allTags = (data || []).flatMap((post: { tags: string[] }) => post.tags || []) as string[];
     return [...new Set(allTags)];
   } catch {
     return [];

@@ -1,4 +1,8 @@
-import { supabase } from './supabase';
+// ============================================================================
+// STORAGE - Uses InsForge Storage SDK
+// ============================================================================
+
+import { getStorage, getInsforgeClient } from './insforge/client';
 
 // ============================================================================
 // STORAGE BUCKET CONFIGURATION
@@ -102,22 +106,19 @@ export async function uploadFile(
     const filePath = `${userId}/${fileName}`;
 
     // Upload file
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await getStorage()
       .from(bucket)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
+      .upload(filePath, file);
 
     if (uploadError) {
       throw new Error(uploadError.message);
     }
 
-    // Get public URL
-    const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+    // Get public URL - InsForge returns string directly, not { data: { publicUrl } }
+    const url = getStorage().from(bucket).getPublicUrl(filePath);
 
     return {
-      url: data.publicUrl,
+      url: url,
       error: null,
       path: filePath,
     };
@@ -148,7 +149,7 @@ export async function uploadTalentCV(file: File, userId: string): Promise<Upload
  */
 export async function deleteFile(bucket: BucketName, path: string): Promise<Error | null> {
   try {
-    const { error } = await supabase.storage.from(bucket).remove([path]);
+    const { error } = await getStorage().from(bucket).remove(path);
     if (error) {
       throw new Error(error.message);
     }
@@ -171,15 +172,10 @@ export async function getSignedUrl(
   expiresIn: number = 3600
 ): Promise<string | null> {
   try {
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .createSignedUrl(path, expiresIn);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data.signedUrl;
+    // InsForge doesn't have createSignedUrl - files are public by default
+    // Just use getPublicUrl instead
+    const url = getStorage().from(bucket).getPublicUrl(path);
+    return url;
   } catch {
     return null;
   }
@@ -195,17 +191,19 @@ export async function listFiles(
   bucket: BucketName,
   prefix?: string,
   limit: number = 100
-): Promise<{ name: string; id: string; updated_at: string; created_at: string; last_accessed_at: string; metadata: Record<string, unknown> }[]> {
+): Promise<{ key: string; url: string; bucket: string; size: number; uploadedAt: string; mimeType?: string }[]> {
   try {
-    const { data, error } = await supabase.storage
+    const result = await getStorage()
       .from(bucket)
-      .list(prefix, { limit });
+      .list({ prefix, limit });
 
-    if (error) {
-      throw new Error(error.message);
+    if (result.error) {
+      throw new Error(result.error.message);
     }
 
-    return (data || []).filter(item => item.id); // Filter out folders
+    // InsForge list returns { data: { objects: [...] } }
+    const objects = result.data?.objects || [];
+    return objects as { key: string; url: string; bucket: string; size: number; uploadedAt: string; mimeType?: string }[];
   } catch {
     return [];
   }
