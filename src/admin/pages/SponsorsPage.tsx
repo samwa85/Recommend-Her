@@ -2,7 +2,7 @@
 // SPONSORS PAGE - Detailed Sponsor Management
 // ============================================================================
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Eye,
@@ -16,6 +16,7 @@ import {
   Phone,
   Building2,
   Globe,
+  Linkedin,
   Filter,
   ArrowUpDown,
   ArrowUp,
@@ -28,11 +29,19 @@ import {
   ExternalLink,
   Archive,
   DollarSign,
+  User,
+  Loader2,
+  Undo,
+  Redo,
+  Save,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import {
   Select,
@@ -74,16 +83,19 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox as FormCheckbox } from '@/components/ui/checkbox';
 import { AdminLayout } from '../components/AdminLayout';
 import { SkeletonTable } from '../components/LoadingSkeleton';
 import { StatusBadge } from '../components/StatusBadge';
+import { SponsorCard } from '../components/SponsorCard';
 import { useSponsorList, useSponsorDetail } from '../hooks/useAdminData';
-import { updateSponsorStatus as updateSponsorStatusQuery, deleteSponsor as deleteSponsorQuery, updateSponsor as updateSponsorQuery } from '@/lib/queries';
+import { updateSponsorStatus as updateSponsorStatusQuery, deleteSponsor as deleteSponsorQuery, updateSponsor as updateSponsorQuery, getSponsorById } from '@/lib/queries';
 import { formatDate, formatRelativeTime } from '@/lib/format/date';
 import { SponsorStatus, SPONSOR_STATUS_LABELS } from '@/lib/types/enums';
 import type { SponsorProfile } from '@/lib/types/db';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // ============================================================================
 // CONSTANTS & CONFIG
@@ -109,11 +121,39 @@ const INDUSTRIES = [
 ];
 
 const COMPANY_SIZES = [
-  '1-10',
-  '11-50',
-  '51-200',
-  '201-500',
-  '500+',
+  { value: '1-10', label: '1-10 employees' },
+  { value: '11-50', label: '11-50 employees' },
+  { value: '51-200', label: '51-200 employees' },
+  { value: '201-500', label: '201-500 employees' },
+  { value: '500+', label: '500+ employees' },
+];
+
+const SPONSORSHIP_AMOUNTS = [
+  { value: 'under_5k', label: 'Under $5,000' },
+  { value: '5k_10k', label: '$5,000 - $10,000' },
+  { value: '10k_25k', label: '$10,000 - $25,000' },
+  { value: '25k_50k', label: '$25,000 - $50,000' },
+  { value: '50k_plus', label: '$50,000+' },
+];
+
+const FOCUS_AREAS = [
+  'Mentorship',
+  'Funding',
+  'Networking',
+  'Speaking Opportunities',
+  'Board Positions',
+  'Job Referrals',
+  'Event Sponsorship',
+  'Training & Development',
+];
+
+const ROLE_TYPES = [
+  'Executive (C-Suite)',
+  'VP / Director',
+  'Senior Manager',
+  'Manager',
+  'Individual Contributor',
+  'Board Member',
 ];
 
 // ============================================================================
@@ -168,19 +208,65 @@ export default function SponsorsPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
   const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | 'archive' | 'delete'>('activate');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editForm, setEditForm] = useState({
+    // Personal Information
     full_name: '',
     email: '',
     phone: '',
     job_title: '',
+    linkedin_url: '',
+    
+    // Company Information
     company_name: '',
     company_website: '',
-    industry: '',
     company_size: '',
+    industry: '',
+    company_description: '',
+    
+    // Sponsor Details
+    is_recruiter: false,
+    focus_areas: [] as string[],
+    role_types: [] as string[],
     sponsorship_amount: '',
     message: '',
     internal_notes: '',
+    
+    // Status
+    status: 'pending' as SponsorStatus,
   });
+  const [activeTab, setActiveTab] = useState('personal');
+
+  // ============================================================================
+  // ROBUSTNESS STATE
+  // ============================================================================
+  
+  // Validation errors
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  
+  // Optimistic update state
+  const [originalSponsor, setOriginalSponsor] = useState<SponsorProfile | null>(null);
+  const [isOptimisticUpdating, setIsOptimisticUpdating] = useState(false);
+  
+  // Conflict detection
+  const [lastModified, setLastModified] = useState<string>('');
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [conflictSponsor, setConflictSponsor] = useState<SponsorProfile | null>(null);
+  
+  // History for undo/redo
+  const [history, setHistory] = useState<typeof editForm[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const maxHistorySize = 50;
+  
+  // Dirty state tracking
+  const [isDirty, setIsDirty] = useState(false);
+  const initialFormRef = useRef<typeof editForm | null>(null);
+  
+  // Auto-save
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [lastAutoSaved, setLastAutoSaved] = useState<Date | null>(null);
+  const [hasDraft, setHasDraft] = useState(false);
 
   // ============================================================================
   // DATA FETCHING
@@ -335,60 +421,441 @@ export default function SponsorsPage() {
     );
   }, [selectedSponsorId, remove, refresh]);
 
+  // ============================================================================
+  // ROBUSTNESS HELPER FUNCTIONS (defined before handlers that use them)
+  // ============================================================================
+  
+  // Map error codes to user-friendly messages
+  const getErrorMessage = (error: Error | unknown): string => {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('23505')) return 'A sponsor with this email already exists';
+    if (message.includes('23503')) return 'Invalid reference - check related data';
+    if (message.includes('42501') || message.includes('insufficient_privilege')) return 'Permission denied - contact administrator';
+    if (message.includes('Network') || message.includes('fetch') || message.includes('connection')) return 'Connection lost. Changes will be saved when connection is restored.';
+    if (message.includes('timeout')) return 'Request timed out. Please try again.';
+    return message;
+  };
+  
+  // Real-time field validation
+  const validateField = useCallback((field: string, value: unknown): string | null => {
+    switch (field) {
+      case 'email':
+        if (!value || typeof value !== 'string') return 'Email is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email format';
+        return null;
+      case 'full_name':
+        if (!value || typeof value !== 'string' || value.trim().length < 2) return 'Name must be at least 2 characters';
+        return null;
+      case 'company_name':
+        if (!value || typeof value !== 'string' || value.trim().length < 2) return 'Company name is required';
+        return null;
+      case 'company_website':
+        if (value && typeof value === 'string' && value.trim() && !/^https?:\/\/.+/.test(value)) {
+          return 'Must start with http:// or https://';
+        }
+        return null;
+      case 'linkedin_url':
+        if (value && typeof value === 'string' && value.trim() && !value.includes('linkedin.com')) {
+          return 'Must be a valid LinkedIn URL';
+        }
+        return null;
+      default:
+        return null;
+    }
+  }, []);
+  
+  // Track field touch
+  const markFieldTouched = useCallback((field: string) => {
+    setTouchedFields(prev => new Set([...prev, field]));
+  }, []);
+  
+  // Check if form is dirty
+  const checkDirty = useCallback((current: typeof editForm, initial: typeof editForm | null): boolean => {
+    if (!initial) return false;
+    return JSON.stringify(current) !== JSON.stringify(initial);
+  }, []);
+  
+  // Clear draft
+  const clearDraft = useCallback((sponsorId: string) => {
+    localStorage.removeItem(`sponsor_draft_${sponsorId}`);
+    setHasDraft(false);
+  }, []);
+  
+  // Load draft from localStorage
+  const loadDraft = useCallback((sponsorId: string): boolean => {
+    const draft = localStorage.getItem(`sponsor_draft_${sponsorId}`);
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        const draftTime = new Date(parsed.timestamp);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - draftTime.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursDiff < 24 && parsed.originalId === sponsorId) {
+          return true;
+        } else {
+          localStorage.removeItem(`sponsor_draft_${sponsorId}`);
+        }
+      } catch {
+        localStorage.removeItem(`sponsor_draft_${sponsorId}`);
+      }
+    }
+    return false;
+  }, []);
+  
+  // Validate all required fields
+  const validateAllFields = useCallback((): boolean => {
+    const errors: Record<string, string> = {};
+    const fields = ['full_name', 'email', 'company_name'];
+    
+    fields.forEach(field => {
+      const error = validateField(field, editForm[field as keyof typeof editForm]);
+      if (error) errors[field] = error;
+    });
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [editForm, validateField]);
+  
+  // Add to history for undo/redo
+  const addToHistory = useCallback((newState: typeof editForm) => {
+    setHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push({ ...newState });
+      if (newHistory.length > maxHistorySize) {
+        newHistory.shift();
+      }
+      return newHistory;
+    });
+    setHistoryIndex(prev => Math.min(prev + 1, maxHistorySize - 1));
+  }, [historyIndex]);
+  
+  // Undo action
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setEditForm(history[newIndex]);
+      toast.info('Undo successful');
+    }
+  }, [history, historyIndex]);
+  
+  // Redo action
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setEditForm(history[newIndex]);
+      toast.info('Redo successful');
+    }
+  }, [history, historyIndex]);
+  
+  // Get only changed fields for partial update
+  const getChangedFields = useCallback((original: SponsorProfile | null, current: typeof editForm): Partial<SponsorProfile> => {
+    if (!original) return {};
+    const changes: Partial<SponsorProfile> = {};
+    
+    const compareFields: (keyof typeof current)[] = [
+      'full_name', 'email', 'phone', 'job_title', 'linkedin_url',
+      'company_name', 'company_website', 'company_size', 'industry', 'company_description',
+      'is_recruiter', 'focus_areas', 'role_types', 'sponsorship_amount', 'message', 'internal_notes', 'status'
+    ];
+    
+    compareFields.forEach(field => {
+      const originalValue = original[field as keyof SponsorProfile];
+      const currentValue = current[field];
+      
+      if (Array.isArray(currentValue)) {
+        const originalArray = (originalValue as unknown as string[]) || [];
+        if (JSON.stringify(originalArray.sort()) !== JSON.stringify([...currentValue].sort())) {
+          (changes as Record<string, unknown>)[field] = currentValue.length > 0 ? currentValue : null;
+        }
+      } else if (originalValue !== currentValue && !(originalValue === null && !currentValue)) {
+        (changes as Record<string, unknown>)[field] = currentValue || null;
+      }
+    });
+    
+    return changes;
+  }, []);
+  
+  // Auto-save draft to localStorage
+  const saveDraft = useCallback(() => {
+    if (selectedSponsorId && isDirty) {
+      localStorage.setItem(`sponsor_draft_${selectedSponsorId}`, JSON.stringify({
+        form: editForm,
+        timestamp: new Date().toISOString(),
+        originalId: selectedSponsorId
+      }));
+      setLastAutoSaved(new Date());
+      setHasDraft(true);
+    }
+  }, [selectedSponsorId, editForm, isDirty]);
+  
+  // Check for conflicts before saving
+  const checkForConflicts = useCallback(async (): Promise<boolean> => {
+    if (!selectedSponsorId || !lastModified) return false;
+    
+    const current = await getSponsorById(selectedSponsorId);
+    if (current.data?.updated_at !== lastModified) {
+      setConflictSponsor(current.data || null);
+      setShowConflictDialog(true);
+      return true;
+    }
+    return false;
+  }, [selectedSponsorId, lastModified]);
+  
+  // Cancel edit with confirmation if dirty
+  const handleCancelEdit = useCallback(() => {
+    if (isDirty) {
+      const confirm = window.confirm('You have unsaved changes. Discard them?');
+      if (!confirm) return;
+    }
+    setEditDialogOpen(false);
+    setFieldErrors({});
+    setTouchedFields(new Set());
+  }, [isDirty]);
+
   const handleOpenEdit = useCallback((sponsor: SponsorProfile) => {
     setSelectedSponsorId(sponsor.id);
-    setEditForm({
+    setLastModified(sponsor.updated_at);
+    setOriginalSponsor(sponsor);
+    setFieldErrors({});
+    setTouchedFields(new Set());
+    setHistory([]);
+    setHistoryIndex(-1);
+    setHasDraft(false);
+    
+    const formData = {
+      // Personal Information
       full_name: sponsor.full_name || '',
       email: sponsor.email || '',
       phone: sponsor.phone || '',
       job_title: sponsor.job_title || '',
+      linkedin_url: sponsor.linkedin_url || '',
+      
+      // Company Information
       company_name: sponsor.company_name || '',
       company_website: sponsor.company_website || '',
-      industry: sponsor.industry || '',
       company_size: sponsor.company_size || '',
+      industry: sponsor.industry || '',
+      company_description: sponsor.company_description || '',
+      
+      // Sponsor Details
+      is_recruiter: sponsor.is_recruiter || false,
+      focus_areas: sponsor.focus_areas || [],
+      role_types: sponsor.role_types || [],
       sponsorship_amount: sponsor.sponsorship_amount || '',
       message: sponsor.message || '',
       internal_notes: sponsor.internal_notes || '',
-    });
+      
+      // Status
+      status: (sponsor.status as SponsorStatus) || 'pending',
+    };
+    
+    // Check for draft
+    if (loadDraft(sponsor.id)) {
+      const draft = JSON.parse(localStorage.getItem(`sponsor_draft_${sponsor.id}`) || '{}');
+      setEditForm(draft.form);
+      initialFormRef.current = draft.form;
+      setHasDraft(true);
+      toast.info('Restored unsaved changes from draft', {
+        action: {
+          label: 'Discard',
+          onClick: () => {
+            setEditForm(formData);
+            initialFormRef.current = formData;
+            clearDraft(sponsor.id);
+            setHasDraft(false);
+          }
+        }
+      });
+    } else {
+      setEditForm(formData);
+      initialFormRef.current = formData;
+    }
+    
+    // Add initial state to history
+    setHistory([formData]);
+    setHistoryIndex(0);
+    
+    setActiveTab('personal');
     setEditDialogOpen(true);
-  }, []);
+  }, [loadDraft, clearDraft]);
 
-  const handleSaveEdit = useCallback(async () => {
-    if (!selectedSponsorId) return;
-    if (!editForm.full_name.trim() || !editForm.email.trim() || !editForm.company_name.trim()) {
-      toast.error('Name, email, and company are required');
+  const handleSaveEdit = useCallback(async (forceSave = false) => {
+    if (!selectedSponsorId || !originalSponsor) return;
+    
+    // Validate all fields
+    if (!validateAllFields()) {
+      toast.error('Please fix the errors before saving');
       return;
     }
 
-    toast.promise(
-      async () => {
-        const result = await updateSponsorQuery(selectedSponsorId, {
-          full_name: editForm.full_name.trim(),
-          email: editForm.email.trim().toLowerCase(),
-          phone: editForm.phone.trim() || null,
-          job_title: editForm.job_title.trim() || null,
-          company_name: editForm.company_name.trim(),
-          company_website: editForm.company_website.trim() || null,
-          industry: editForm.industry.trim() || null,
-          company_size: editForm.company_size.trim() || null,
-          sponsorship_amount: editForm.sponsorship_amount.trim() || null,
-          message: editForm.message.trim() || null,
-          internal_notes: editForm.internal_notes.trim() || null,
-          updated_at: new Date().toISOString(),
-        });
-        if (result.error) throw result.error;
-        setEditDialogOpen(false);
-        refresh();
-        return 'Sponsor updated';
-      },
-      {
-        loading: 'Saving...',
-        success: 'Sponsor updated successfully',
-        error: 'Failed to update sponsor',
-      }
-    );
-  }, [selectedSponsorId, editForm, refresh]);
+    // Check for conflicts (unless force save)
+    if (!forceSave) {
+      const hasConflict = await checkForConflicts();
+      if (hasConflict) return;
+    }
 
+    setIsSubmitting(true);
+    setIsOptimisticUpdating(true);
+
+    // Optimistically update the UI
+    const optimisticSponsor = { ...originalSponsor, ...editForm };
+    
+    try {
+      // Get only changed fields for partial update
+      const changes = getChangedFields(originalSponsor, editForm);
+      
+      // If nothing changed, just close the dialog
+      if (Object.keys(changes).length === 0) {
+        toast.info('No changes to save');
+        setEditDialogOpen(false);
+        return;
+      }
+      
+      // Add metadata
+      changes.updated_at = new Date().toISOString();
+      
+      const result = await updateSponsorQuery(selectedSponsorId, changes);
+      
+      if (result.error) throw result.error;
+      
+      // Clear draft on successful save
+      clearDraft(selectedSponsorId);
+      setHasDraft(false);
+      setIsDirty(false);
+      
+      toast.success('Sponsor updated successfully', {
+        description: Object.keys(changes).length > 1 
+          ? `${Object.keys(changes).length - 1} fields updated` 
+          : undefined
+      });
+      
+      setEditDialogOpen(false);
+      refresh();
+    } catch (err) {
+      console.error('Error updating sponsor:', err);
+      const errorMessage = getErrorMessage(err);
+      toast.error('Failed to update sponsor', {
+        description: errorMessage,
+        action: errorMessage.includes('Connection') ? {
+          label: 'Retry',
+          onClick: () => handleSaveEdit()
+        } : undefined
+      });
+    } finally {
+      setIsSubmitting(false);
+      setIsOptimisticUpdating(false);
+    }
+  }, [selectedSponsorId, originalSponsor, editForm, validateAllFields, checkForConflicts, getChangedFields, clearDraft, refresh]);
+
+  // Generic field update with history tracking
+  const updateField = useCallback((field: keyof typeof editForm, value: unknown) => {
+    setEditForm(prev => {
+      const newState = { ...prev, [field]: value };
+      addToHistory(newState);
+      return newState;
+    });
+    
+    // Validate on change
+    const error = validateField(field, value);
+    setFieldErrors(prev => ({ ...prev, [field]: error || '' }));
+  }, [addToHistory, validateField]);
+  
+  const toggleFocusArea = (area: string) => {
+    setEditForm(prev => {
+      const newAreas = prev.focus_areas.includes(area)
+        ? prev.focus_areas.filter(a => a !== area)
+        : [...prev.focus_areas, area];
+      const newState = { ...prev, focus_areas: newAreas };
+      addToHistory(newState);
+      return newState;
+    });
+  };
+
+  const toggleRoleType = (role: string) => {
+    setEditForm(prev => {
+      const newRoles = prev.role_types.includes(role)
+        ? prev.role_types.filter(r => r !== role)
+        : [...prev.role_types, role];
+      const newState = { ...prev, role_types: newRoles };
+      addToHistory(newState);
+      return newState;
+    });
+  };
+  
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!editDialogOpen) return;
+      
+      // Ctrl/Cmd + Z for undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      
+      // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y for redo
+      if ((e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) {
+        e.preventDefault();
+        redo();
+      }
+      
+      // Ctrl/Cmd + S for save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSaveEdit();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editDialogOpen, undo, redo, handleSaveEdit]);
+  
+  // Before unload warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty && editDialogOpen) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty, editDialogOpen]);
+  
+  // Auto-save effect
+  useEffect(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    if (isDirty && editDialogOpen) {
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        saveDraft();
+      }, 5000); // Auto-save after 5 seconds of inactivity
+    }
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [editForm, isDirty, editDialogOpen, saveDraft]);
+  
+  // Track dirty state
+  useEffect(() => {
+    if (initialFormRef.current) {
+      setIsDirty(checkDirty(editForm, initialFormRef.current));
+    }
+  }, [editForm, checkDirty]);
+  
   const handleBulkAction = useCallback(async () => {
     const ids = Array.from(selectedRows);
     
@@ -608,7 +1075,7 @@ export default function SponsorsPage() {
                 <SelectContent>
                   <SelectItem value="all">All Sizes</SelectItem>
                   {COMPANY_SIZES.map(size => (
-                    <SelectItem key={size} value={size}>{size} employees</SelectItem>
+                    <SelectItem key={size.value} value={size.value}>{size.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1196,65 +1663,492 @@ export default function SponsorsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Sponsor Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+      {/* Edit Sponsor Dialog - Robust Form */}
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        if (!open) handleCancelEdit();
+        else setEditDialogOpen(open);
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Edit Sponsor</DialogTitle>
+            <div className="flex items-start justify-between">
+              <div>
+                <DialogTitle>Edit Sponsor</DialogTitle>
+                <DialogDescription>
+                  Update sponsor profile details. All fields marked with * are required.
+                  {isDirty && <span className="text-amber-600 ml-2">• Unsaved changes</span>}
+                </DialogDescription>
+              </div>
+              {/* Toolbar */}
+              <div className="flex items-center gap-2">
+                {/* Undo/Redo */}
+                <div className="flex items-center border rounded-md">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={undo}
+                    disabled={historyIndex <= 0}
+                    title="Undo (Ctrl+Z)"
+                  >
+                    <Undo className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={redo}
+                    disabled={historyIndex >= history.length - 1}
+                    title="Redo (Ctrl+Y)"
+                  >
+                    <Redo className="w-4 h-4" />
+                  </Button>
+                </div>
+                {/* Draft indicator */}
+                {hasDraft && (
+                  <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
+                    <Save className="w-3 h-3 mr-1" />
+                    Draft
+                  </Badge>
+                )}
+                {/* Auto-save indicator */}
+                {lastAutoSaved && (
+                  <span className="text-xs text-muted-foreground">
+                    Auto-saved {lastAutoSaved.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
+          
+          {/* Validation Summary */}
+          {Object.keys(fieldErrors).length > 0 && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Please fix {Object.keys(fieldErrors).length} error(s) before saving
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="grid w-full grid-cols-4 shrink-0">
+              <TabsTrigger value="personal">Personal</TabsTrigger>
+              <TabsTrigger value="company">Company</TabsTrigger>
+              <TabsTrigger value="sponsor">Sponsor Details</TabsTrigger>
+              <TabsTrigger value="notes">Notes & Status</TabsTrigger>
+            </TabsList>
+            
+            <div className="flex-1 overflow-y-auto mt-4 pr-2">
+              {/* Personal Information Tab */}
+              <TabsContent value="personal" className="space-y-4 mt-0 focus-visible:outline-none">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base font-medium flex items-center gap-2">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      Personal Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-full_name">
+                          Full Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="edit-full_name"
+                          value={editForm.full_name}
+                          onChange={(e) => updateField('full_name', e.target.value)}
+                          onBlur={() => markFieldTouched('full_name')}
+                          placeholder="Enter full name"
+                          className={cn(fieldErrors["full_name"] && touchedFields.has("full_name") && 'border-red-500')}
+                        />
+                        {fieldErrors["full_name"] && touchedFields.has("full_name") && (
+                          <p className="text-xs text-red-500">{fieldErrors["full_name"]}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-job_title">Job Title</Label>
+                        <Input
+                          id="edit-job_title"
+                          value={editForm.job_title}
+                          onChange={(e) => updateField('job_title', e.target.value)}
+                          placeholder="e.g., VP of Engineering"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-email">
+                          Email <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="edit-email"
+                            type="email"
+                            value={editForm.email}
+                            onChange={(e) => updateField('email', e.target.value)}
+                            onBlur={() => markFieldTouched('email')}
+                            placeholder="email@company.com"
+                            className={cn('pl-9', fieldErrors["email"] && touchedFields.has("email") && 'border-red-500')}
+                          />
+                        </div>
+                        {fieldErrors["email"] && touchedFields.has("email") && (
+                          <p className="text-xs text-red-500">{fieldErrors["email"]}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-phone">Phone Number</Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="edit-phone"
+                            value={editForm.phone}
+                            onChange={(e) => updateField('phone', e.target.value)}
+                            placeholder="+1 (555) 000-0000"
+                            className="pl-9"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="edit-linkedin_url">LinkedIn URL</Label>
+                        <div className="relative">
+                          <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="edit-linkedin_url"
+                            value={editForm.linkedin_url}
+                            onChange={(e) => updateField('linkedin_url', e.target.value)}
+                            onBlur={() => markFieldTouched('linkedin_url')}
+                            placeholder="https://linkedin.com/in/profile"
+                            className={cn('pl-9', fieldErrors["linkedin_url"] && touchedFields.has("linkedin_url") && 'border-red-500')}
+                          />
+                        </div>
+                        {fieldErrors["linkedin_url"] && touchedFields.has("linkedin_url") && (
+                          <p className="text-xs text-red-500">{fieldErrors["linkedin_url"]}</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Company Information Tab */}
+              <TabsContent value="company" className="space-y-4 mt-0 focus-visible:outline-none">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base font-medium flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-muted-foreground" />
+                      Company Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-company_name">
+                          Company Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="edit-company_name"
+                          value={editForm.company_name}
+                          onChange={(e) => updateField('company_name', e.target.value)}
+                          onBlur={() => markFieldTouched('company_name')}
+                          placeholder="Enter company name"
+                          className={cn(fieldErrors["company_name"] && touchedFields.has("company_name") && 'border-red-500')}
+                        />
+                        {fieldErrors["company_name"] && touchedFields.has("company_name") && (
+                          <p className="text-xs text-red-500">{fieldErrors["company_name"]}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-company_website">Company Website</Label>
+                        <div className="relative">
+                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="edit-company_website"
+                            value={editForm.company_website}
+                            onChange={(e) => updateField('company_website', e.target.value)}
+                            onBlur={() => markFieldTouched('company_website')}
+                            placeholder="https://company.com"
+                            className={cn('pl-9', fieldErrors["company_website"] && touchedFields.has("company_website") && 'border-red-500')}
+                          />
+                        </div>
+                        {fieldErrors["company_website"] && touchedFields.has("company_website") && (
+                          <p className="text-xs text-red-500">{fieldErrors["company_website"]}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-industry">Industry</Label>
+                        <Select
+                          value={editForm.industry}
+                          onValueChange={(v) => updateField('industry', v)}
+                        >
+                          <SelectTrigger id="edit-industry">
+                            <SelectValue placeholder="Select industry" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {INDUSTRIES.map((industry) => (
+                              <SelectItem key={industry} value={industry}>
+                                {industry}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-company_size">Company Size</Label>
+                        <Select
+                          value={editForm.company_size}
+                          onValueChange={(v) => updateField('company_size', v)}
+                        >
+                          <SelectTrigger id="edit-company_size">
+                            <SelectValue placeholder="Select company size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COMPANY_SIZES.map((size) => (
+                              <SelectItem key={size.value} value={size.value}>
+                                {size.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="edit-company_description">Company Description</Label>
+                        <Textarea
+                          id="edit-company_description"
+                          value={editForm.company_description}
+                          onChange={(e) => updateField('company_description', e.target.value)}
+                          placeholder="Brief description of the company..."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Sponsor Details Tab */}
+              <TabsContent value="sponsor" className="space-y-4 mt-0 focus-visible:outline-none">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base font-medium flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-muted-foreground" />
+                      Sponsor Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Recruiter Toggle */}
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="edit-is_recruiter"
+                        checked={editForm.is_recruiter}
+                        onCheckedChange={(checked) => 
+                          updateField('is_recruiter', checked === true)
+                        }
+                      />
+                      <Label htmlFor="edit-is_recruiter" className="cursor-pointer">
+                        This is a recruiter/agency
+                      </Label>
+                    </div>
+
+                    <Separator />
+
+                    {/* Sponsorship Amount */}
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-sponsorship_amount">Sponsorship Interest</Label>
+                      <Select
+                        value={editForm.sponsorship_amount}
+                        onValueChange={(v) => updateField('sponsorship_amount', v)}
+                      >
+                        <SelectTrigger id="edit-sponsorship_amount" className="w-full sm:w-[300px]">
+                          <SelectValue placeholder="Select sponsorship level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SPONSORSHIP_AMOUNTS.map((amount) => (
+                            <SelectItem key={amount.value} value={amount.value}>
+                              {amount.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Focus Areas */}
+                    <div className="space-y-2">
+                      <Label>Focus Areas</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {FOCUS_AREAS.map((area) => (
+                          <button
+                            key={area}
+                            type="button"
+                            onClick={() => toggleFocusArea(area)}
+                            className={cn(
+                              'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                              editForm.focus_areas.includes(area)
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted hover:bg-muted/80'
+                            )}
+                          >
+                            {area}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Role Types */}
+                    <div className="space-y-2">
+                      <Label>Role Types of Interest</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {ROLE_TYPES.map((role) => (
+                          <button
+                            key={role}
+                            type="button"
+                            onClick={() => toggleRoleType(role)}
+                            className={cn(
+                              'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                              editForm.role_types.includes(role)
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted hover:bg-muted/80'
+                            )}
+                          >
+                            {role}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Message */}
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-message">Message / Notes from Sponsor</Label>
+                      <Textarea
+                        id="edit-message"
+                        value={editForm.message}
+                        onChange={(e) => updateField('message', e.target.value)}
+                        placeholder="Any additional information or message from the sponsor..."
+                        rows={4}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Notes & Status Tab */}
+              <TabsContent value="notes" className="space-y-4 mt-0 focus-visible:outline-none">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base font-medium">Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select
+                      value={editForm.status}
+                      onValueChange={(v) => updateField('status', v as SponsorStatus)}
+                    >
+                      <SelectTrigger className="w-full sm:w-[200px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base font-medium">Internal Admin Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea
+                      value={editForm.internal_notes}
+                      onChange={(e) => updateField('internal_notes', e.target.value)}
+                      placeholder="Private notes for admin use only..."
+                      rows={6}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </div>
+          </Tabs>
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={handleCancelEdit} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => handleSaveEdit()} 
+              disabled={isSubmitting || !isDirty} 
+              className="min-w-[120px]"
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Save className="w-4 h-4" />
+                  Save Changes
+                </span>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Conflict Resolution Dialog */}
+      <Dialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              Conflict Detected
+            </DialogTitle>
             <DialogDescription>
-              Update sponsor profile details.
+              This sponsor was modified by another user since you started editing.
+              
+              <div className="mt-4 p-3 bg-muted rounded-md text-sm">
+                <p className="font-medium">Last modified: {conflictSponsor ? formatRelativeTime(conflictSponsor.updated_at) : 'Unknown'}</p>
+              </div>
             </DialogDescription>
           </DialogHeader>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Full Name</label>
-              <Input value={editForm.full_name} onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
-              <Input type="email" value={editForm.email} onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Phone</label>
-              <Input value={editForm.phone} onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Job Title</label>
-              <Input value={editForm.job_title} onChange={(e) => setEditForm(prev => ({ ...prev, job_title: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Company Name</label>
-              <Input value={editForm.company_name} onChange={(e) => setEditForm(prev => ({ ...prev, company_name: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Company Website</label>
-              <Input value={editForm.company_website} onChange={(e) => setEditForm(prev => ({ ...prev, company_website: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Industry</label>
-              <Input value={editForm.industry} onChange={(e) => setEditForm(prev => ({ ...prev, industry: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Company Size</label>
-              <Input value={editForm.company_size} onChange={(e) => setEditForm(prev => ({ ...prev, company_size: e.target.value }))} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium">Sponsorship Amount</label>
-              <Input value={editForm.sponsorship_amount} onChange={(e) => setEditForm(prev => ({ ...prev, sponsorship_amount: e.target.value }))} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium">Message</label>
-              <Textarea value={editForm.message} onChange={(e) => setEditForm(prev => ({ ...prev, message: e.target.value }))} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium">Internal Notes</label>
-              <Textarea value={editForm.internal_notes} onChange={(e) => setEditForm(prev => ({ ...prev, internal_notes: e.target.value }))} />
+          <div className="space-y-3 text-sm">
+            <p>What would you like to do?</p>
+            <div className="grid gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowConflictDialog(false);
+                  if (conflictSponsor) {
+                    handleOpenEdit(conflictSponsor);
+                    toast.info('Refreshed with latest data');
+                  }
+                }}
+              >
+                Reload Latest Data
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowConflictDialog(false);
+                  handleSaveEdit(true); // Force save
+                }}
+              >
+                Overwrite Their Changes
+              </Button>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveEdit}>Save Changes</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 

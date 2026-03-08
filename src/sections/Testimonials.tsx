@@ -171,7 +171,7 @@ const Testimonials = () => {
         <div ref={headerRef} className="text-center mb-12">
           <p 
             className="font-sans text-sm uppercase tracking-[4px] mb-4 font-semibold"
-            style={{ color: '#f472b6' }}
+            style={{ color: 'rgba(255, 255, 255, 0.9)' }}
           >
             Testimonials
           </p>
@@ -192,17 +192,17 @@ const Testimonials = () => {
           >
             {/* Quote Icon */}
             <div 
-              className="absolute -top-6 left-8 w-12 h-12 rounded-full flex items-center justify-center"
+              className="absolute -top-6 left-8 w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
               style={{ backgroundColor: 'var(--primary)' }}
             >
-              <Quote size={24} className="text-white" />
+              <Quote size={22} className="text-white" fill="currentColor" />
             </div>
 
             {/* Content */}
             <div className="pt-4">
               <p 
-                className="font-serif text-xl sm:text-2xl leading-relaxed mb-8"
-                style={{ color: '#ffffff', lineHeight: '1.7' }}
+                className="font-sans text-lg sm:text-xl leading-relaxed mb-8 font-normal"
+                style={{ color: 'rgba(255, 255, 255, 0.95)', lineHeight: '1.75' }}
               >
                 "{currentTestimonial.quote}"
               </p>
@@ -221,14 +221,14 @@ const Testimonials = () => {
                 />
                 <div>
                   <h4 
-                    className="font-serif text-lg sm:text-xl font-bold"
+                    className="font-sans text-base sm:text-lg font-semibold"
                     style={{ color: '#ffffff' }}
                   >
                     {currentTestimonial.name}
                   </h4>
                   <p 
-                    className="font-sans text-base font-medium"
-                    style={{ color: '#6b7280' }}
+                    className="font-sans text-sm sm:text-base font-normal"
+                    style={{ color: 'rgba(255, 255, 255, 0.75)' }}
                   >
                     {currentTestimonial.title}
                     {currentTestimonial.company && ` at ${currentTestimonial.company}`}

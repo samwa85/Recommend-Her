@@ -21,3 +21,4 @@ export {
 export { ChartCard, ChartGrid } from './ChartCard';
 export { ConfirmDialog } from './ConfirmDialog';
 export { EmptyState } from './EmptyState';
+export { SponsorCard } from './SponsorCard';

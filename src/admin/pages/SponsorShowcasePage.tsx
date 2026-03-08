@@ -143,14 +143,10 @@ export default function SponsorShowcasePage() {
       // Upload image if provided
       if (formData.image) {
         const path = `sponsors/${Date.now()}_${formData.image.name}`;
-        const { data: uploadData, error: uploadError } = await uploadFile(
-          'sponsor-images',
-          path,
-          formData.image
-        );
-        if (uploadError) throw uploadError;
-        image_url = uploadData?.publicUrl || '';
-        image_path = path;
+        const uploadResult = await uploadFile('uploads', formData.image, 'admin', path);
+        if (uploadResult.error) throw uploadResult.error;
+        image_url = uploadResult.url || '';
+        image_path = uploadResult.path || path;
       }
 
       const { error } = await createSponsorShowcase({
@@ -197,14 +193,10 @@ export default function SponsorShowcasePage() {
       // Upload new image if provided
       if (formData.image) {
         const path = `sponsors/${Date.now()}_${formData.image.name}`;
-        const { data: uploadData, error: uploadError } = await uploadFile(
-          'sponsor-images',
-          path,
-          formData.image
-        );
-        if (uploadError) throw uploadError;
-        image_url = uploadData?.publicUrl || '';
-        image_path = path;
+        const uploadResult = await uploadFile('uploads', formData.image, 'admin', path);
+        if (uploadResult.error) throw uploadResult.error;
+        image_url = uploadResult.url || '';
+        image_path = uploadResult.path || path;
       }
 
       const { error } = await updateSponsorShowcase(selectedSponsor.id, {
