@@ -34,6 +34,7 @@ import { AdminLayout } from '../components/AdminLayout';
 import { createSponsor } from '@/lib/queries';
 import { INDUSTRIES } from '@/lib/database.types';
 import { cn } from '@/lib/utils';
+import { db } from '@/lib/insforge/client';
 
 // ============================================================================
 // CONSTANTS
@@ -159,7 +160,24 @@ export default function NewSponsorPage() {
     setIsSubmitting(true);
 
     try {
+      // Step 1: Create a profile for the sponsor (required for foreign key)
+      const { data: profileData, error: profileError } = await db
+        .from('profiles')
+        .insert({
+          role: 'sponsor',
+          full_name: formData.full_name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone.trim() || null,
+        })
+        .select('id')
+        .single();
+
+      if (profileError) throw profileError;
+      if (!profileData) throw new Error('Failed to create profile');
+
+      // Step 2: Create sponsor profile with the new user_id
       const result = await createSponsor({
+        user_id: profileData.id,
         full_name: formData.full_name.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim() || null,
