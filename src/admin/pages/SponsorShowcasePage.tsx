@@ -17,7 +17,8 @@ import {
   Image as ImageIcon,
   Save,
   X,
-  Loader2
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { AdminLayout } from '../components/AdminLayout';
 import {
@@ -40,6 +42,7 @@ import {
 } from '@/lib/queries/sponsorShowcase';
 import { uploadFile } from '@/lib/storage';
 import type { SponsorShowcase } from '@/lib/types/db';
+import { cn } from '@/lib/utils';
 
 export default function SponsorShowcasePage() {
   const navigate = useNavigate();
@@ -67,6 +70,10 @@ export default function SponsorShowcasePage() {
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Validation state
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
   // Load sponsors
   const loadSponsors = useCallback(async () => {
@@ -114,6 +121,8 @@ export default function SponsorShowcasePage() {
     });
     setImagePreview(null);
     setSelectedSponsor(null);
+    setFieldErrors({});
+    setTouchedFields(new Set());
   };
 
   // Handle image change
@@ -127,10 +136,63 @@ export default function SponsorShowcasePage() {
     }
   };
 
+  // Validation functions
+  const validateField = (field: string, value: string): string | null => {
+    switch (field) {
+      case 'name':
+        return !value.trim() ? 'Name is required' : null;
+      case 'title':
+        return !value.trim() ? 'Title is required' : null;
+      case 'bio':
+        return !value.trim() ? 'Bio is required' : 
+               value.trim().length < 10 ? 'Bio must be at least 10 characters' : null;
+      case 'linkedin_url':
+        if (value && !value.includes('linkedin.com')) {
+          return 'Must be a valid LinkedIn URL';
+        }
+        return null;
+      default:
+        return null;
+    }
+  };
+  
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    const requiredFields = ['name', 'title', 'bio'];
+    
+    requiredFields.forEach(field => {
+      const error = validateField(field, formData[field as keyof typeof formData] as string);
+      if (error) errors[field] = error;
+    });
+    
+    // Validate LinkedIn if provided
+    if (formData.linkedin_url) {
+      const error = validateField('linkedin_url', formData.linkedin_url);
+      if (error) errors['linkedin_url'] = error;
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+  
+  const markFieldTouched = (field: string) => {
+    setTouchedFields(prev => new Set([...prev, field]));
+  };
+  
+  const updateField = (field: string, value: string | boolean | File | null) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Validate on change for text fields
+    if (typeof value === 'string') {
+      const error = validateField(field, value);
+      setFieldErrors(prev => ({ ...prev, [field]: error || '' }));
+    }
+  };
+
   // Handle add
   const handleAdd = async () => {
-    if (!formData.name.trim() || !formData.title.trim() || !formData.bio.trim()) {
-      toast.error('Name, title, and bio are required');
+    if (!validateForm()) {
+      toast.error('Please fix the errors before saving');
       return;
     }
 
@@ -170,7 +232,9 @@ export default function SponsorShowcasePage() {
       loadSponsors();
     } catch (error) {
       console.error('Error adding sponsor:', error);
-      toast.error('Failed to add sponsor');
+      toast.error('Failed to add sponsor', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -179,8 +243,8 @@ export default function SponsorShowcasePage() {
   // Handle edit
   const handleEdit = async () => {
     if (!selectedSponsor) return;
-    if (!formData.name.trim() || !formData.title.trim() || !formData.bio.trim()) {
-      toast.error('Name, title, and bio are required');
+    if (!validateForm()) {
+      toast.error('Please fix the errors before saving');
       return;
     }
 
@@ -219,7 +283,9 @@ export default function SponsorShowcasePage() {
       loadSponsors();
     } catch (error) {
       console.error('Error updating sponsor:', error);
-      toast.error('Failed to update sponsor');
+      toast.error('Failed to update sponsor', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -298,59 +364,108 @@ export default function SponsorShowcasePage() {
     setIsEditDialogOpen(true);
   };
 
-  // Sponsor Form Component
-  const SponsorForm = () => (
+  // Form field update handler using functional update to avoid stale closures
+  const updateFormField = useCallback(<K extends keyof typeof formData>(
+    field: K,
+    value: typeof formData[K]
+  ) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Validate on change for string fields
+    if (typeof value === 'string') {
+      const error = validateField(field as string, value);
+      setFieldErrors(prev => ({ ...prev, [field]: error || '' }));
+    }
+  }, []);
+
+  // Sponsor Form Component - defined outside to prevent recreation on render
+  const renderSponsorForm = () => (
     <div className="space-y-4">
+      {/* Validation Summary */}
+      {Object.keys(fieldErrors).length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Please fix {Object.keys(fieldErrors).length} error(s) before saving
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Name *</Label>
+          <Label htmlFor="sponsor-name">Name *</Label>
           <Input
+            id="sponsor-name"
             value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            onChange={(e) => updateFormField('name', e.target.value)}
+            onBlur={() => markFieldTouched('name')}
             placeholder="Sponsor name"
+            className={cn(fieldErrors['name'] && touchedFields.has('name') && 'border-red-500')}
           />
+          {fieldErrors['name'] && touchedFields.has('name') && (
+            <p className="text-xs text-red-500">{fieldErrors['name']}</p>
+          )}
         </div>
         <div className="space-y-2">
-          <Label>Title *</Label>
+          <Label htmlFor="sponsor-title">Title *</Label>
           <Input
+            id="sponsor-title"
             value={formData.title}
-            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+            onChange={(e) => updateFormField('title', e.target.value)}
+            onBlur={() => markFieldTouched('title')}
             placeholder="Job title"
+            className={cn(fieldErrors['title'] && touchedFields.has('title') && 'border-red-500')}
           />
+          {fieldErrors['title'] && touchedFields.has('title') && (
+            <p className="text-xs text-red-500">{fieldErrors['title']}</p>
+          )}
         </div>
       </div>
       
       <div className="space-y-2">
-        <Label>Company</Label>
+        <Label htmlFor="sponsor-company">Company</Label>
         <Input
+          id="sponsor-company"
           value={formData.company}
-          onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
+          onChange={(e) => updateFormField('company', e.target.value)}
           placeholder="Company name"
         />
       </div>
 
       <div className="space-y-2">
-        <Label>Bio *</Label>
+        <Label htmlFor="sponsor-bio">Bio *</Label>
         <Textarea
+          id="sponsor-bio"
           value={formData.bio}
-          onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+          onChange={(e) => updateFormField('bio', e.target.value)}
+          onBlur={() => markFieldTouched('bio')}
           placeholder="Sponsor biography..."
           rows={4}
+          className={cn(fieldErrors['bio'] && touchedFields.has('bio') && 'border-red-500')}
         />
+        {fieldErrors['bio'] && touchedFields.has('bio') && (
+          <p className="text-xs text-red-500">{fieldErrors['bio']}</p>
+        )}
       </div>
 
       <div className="space-y-2">
-        <Label>LinkedIn URL</Label>
+        <Label htmlFor="sponsor-linkedin">LinkedIn URL</Label>
         <Input
+          id="sponsor-linkedin"
           value={formData.linkedin_url}
-          onChange={(e) => setFormData(prev => ({ ...prev, linkedin_url: e.target.value }))}
+          onChange={(e) => updateFormField('linkedin_url', e.target.value)}
+          onBlur={() => markFieldTouched('linkedin_url')}
           placeholder="https://linkedin.com/in/..."
+          className={cn(fieldErrors['linkedin_url'] && touchedFields.has('linkedin_url') && 'border-red-500')}
         />
+        {fieldErrors['linkedin_url'] && touchedFields.has('linkedin_url') && (
+          <p className="text-xs text-red-500">{fieldErrors['linkedin_url']}</p>
+        )}
       </div>
 
       <div className="space-y-2">
-        <Label>Photo</Label>
-        <Input type="file" accept="image/*" onChange={handleImageChange} />
+        <Label htmlFor="sponsor-photo">Photo</Label>
+        <Input id="sponsor-photo" type="file" accept="image/*" onChange={handleImageChange} />
         {imagePreview && (
           <img src={imagePreview} alt="Preview" className="w-20 h-20 object-cover rounded-full mt-2" />
         )}
@@ -359,17 +474,19 @@ export default function SponsorShowcasePage() {
       <div className="flex gap-6">
         <div className="flex items-center gap-2">
           <Switch
+            id="sponsor-active"
             checked={formData.is_active}
-            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+            onCheckedChange={(checked) => updateFormField('is_active', checked)}
           />
-          <Label>Active</Label>
+          <Label htmlFor="sponsor-active">Active</Label>
         </div>
         <div className="flex items-center gap-2">
           <Switch
+            id="sponsor-featured"
             checked={formData.featured}
-            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, featured: checked }))}
+            onCheckedChange={(checked) => updateFormField('featured', checked)}
           />
-          <Label>Featured</Label>
+          <Label htmlFor="sponsor-featured">Featured</Label>
         </div>
       </div>
     </div>
@@ -576,7 +693,7 @@ export default function SponsorShowcasePage() {
               Add a sponsor to showcase on the /for-sponsors page
             </DialogDescription>
           </DialogHeader>
-          <SponsorForm />
+          {renderSponsorForm()}
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
               <X className="w-4 h-4 mr-2" />
@@ -603,7 +720,7 @@ export default function SponsorShowcasePage() {
               Update sponsor information
             </DialogDescription>
           </DialogHeader>
-          <SponsorForm />
+          {renderSponsorForm()}
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               <X className="w-4 h-4 mr-2" />
